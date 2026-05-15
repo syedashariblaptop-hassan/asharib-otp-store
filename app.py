@@ -80,6 +80,9 @@ def delete(id):
     if p: db.session.delete(p)
     db.session.commit()
     return redirect(url_for('admin'))
+    @app.route('/')
+def home():
+    return redirect(url_for('store'))
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
