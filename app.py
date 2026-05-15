@@ -9,8 +9,9 @@ db = SQLAlchemy(app)
 # Database Models
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(100))
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    is_blocked = db.Column(db.Boolean, default=False)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -45,13 +46,23 @@ def register_user():
         return render_template('congrats.html')
     return "Email already exists!"
 
-@app.route('/login_user', methods=['POST'])
-def login_user():
-    user = User.query.filter_by(email=request.form.get('email'), password=request.form.get('pass')).first()
-    if user:
-        session['user_logged_in'] = True
-        return redirect(url_for('home'))
-    return "Invalid Credentials!"
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    user = User.query.filter_by(username=username).first()
+    
+    if user and user.password == password:
+        if user.is_blocked:
+            return '''<script>
+                alert("Your account has been suspended. You cannot use this website. Please contact the administrator for more information.");
+                window.location.href = "/login";
+            </script>'''
+        
+        session['user_id'] = user.id
+        return redirect(url_for('store'))
+    
+    return "Invalid credentials"
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
@@ -64,7 +75,7 @@ def admin():
     
     all_p = Product.query.all()
     all_u = User.query.all() # Admin can see users
-    return render_template('admin.html', products=all_p, users=all_u)
+   return render_template('admin.html', products=all_p, users=all_u)
 
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
@@ -83,6 +94,32 @@ def delete(id):
     @app.route('/')
 def home():
     return redirect(url_for('store'))
+@app.route('/admin/toggle_block/<int:user_id>')
 
+def toggle_block(user_id):
+
+    if not session.get('admin'): 
+
+        return redirect(url_for('admin_login'))
+
+    user = User.query.get(user_id)
+
+    if user:
+
+        user.is_blocked = not user.is_blocked
+
+        db.session.commit()
+
+    return redirect(url_for('admin'))
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
+    @app.route('/admin/toggle_block/<int:user_id>')
+def toggle_block(user_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+        
+    user = User.query.get(user_id)
+    if user:
+        user.is_blocked = not user.is_blocked
+        db.session.commit()
+    return redirect(url_for('admin'))
