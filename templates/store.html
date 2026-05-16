@@ -113,7 +113,8 @@
             box-shadow: 0 0 30px rgba(0, 255, 136, 0.2) !important;
         }
         .swal2-title { color: #00ff88 !important; font-weight: 800 !important; }
-        .swal2-confirm { border-radius: 12px !important; padding: 12px 30px !important; font-weight: bold !important; text-transform: uppercase !important; }
+        .swal2-confirm { border-radius: 12px !important; padding: 12px 25px !important; font-weight: bold !important; text-transform: uppercase !important; margin: 5px !important; }
+        .swal2-cancel { border-radius: 12px !important; padding: 12px 25px !important; font-weight: bold !important; text-transform: uppercase !important; margin: 5px !important; }
     </style>
 </head>
 <body>
@@ -217,11 +218,14 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Session Terminated',
-                    text: 'Your account has been suspended or removed by the administrator. Please contact support for further assistance.',
+                    text: 'Your account has been suspended or removed by the administrator.',
                     background: '#111',
                     color: '#fff',
+                    showCancelButton: true,
                     confirmButtonColor: '#00ff88',
+                    cancelButtonColor: '#25D366',
                     confirmButtonText: 'UNDERSTOOD',
+                    cancelButtonText: '<i class="fab fa-whatsapp"></i> CONTACT SUPPORT',
                     allowOutsideClick: false,
                     showClass: {
                         popup: 'animate__animated animate__fadeInDown'
@@ -231,6 +235,10 @@
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        window.location.href = "/logout";
+                    } else if (result.dismiss === Swal.DismissReason.cancel) {
+                        // Redirect to WhatsApp with a pre-filled help message
+                        window.open("https://wa.me/923232522768?text=Hello%20Admin,%20my%20account%20is%20showing%20session%20terminated.%20I%20need%20help!", "_blank");
                         window.location.href = "/logout";
                     }
                 });
