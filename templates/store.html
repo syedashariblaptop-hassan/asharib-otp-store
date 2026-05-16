@@ -6,6 +6,7 @@
     
     <title>Asharib Tech Store | Premium Digital Services</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
@@ -103,8 +104,16 @@
         .modal-content { background-color: #111; margin: 15% auto; padding: 25px; border: 1px solid #00ff88; width: 85%; max-width: 400px; border-radius: 20px; text-align: center; }
         .close-modal { color: #666; float: right; font-size: 28px; cursor: pointer; }
 
-        /* SweetAlert Dark Theme Override */
-        .swal2-popup { background: #111 !important; color: #fff !important; border: 1px solid #00ff88 !important; border-radius: 20px !important; }
+        /* SweetAlert Custom Theme */
+        .swal2-popup { 
+            background: #111 !important; 
+            color: #fff !important; 
+            border: 1px solid #00ff88 !important; 
+            border-radius: 25px !important; 
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2) !important;
+        }
+        .swal2-title { color: #00ff88 !important; font-weight: 800 !important; }
+        .swal2-confirm { border-radius: 12px !important; padding: 12px 30px !important; font-weight: bold !important; text-transform: uppercase !important; }
     </style>
 </head>
 <body>
@@ -204,17 +213,22 @@
         var current_user_id = "{{ session.get('user_id') }}";
 
         socket.on('force_logout', function(data) {
-            // Check agar block hone wala user yehi hai
             if (data.user_id == current_user_id) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Access Suspended!',
-                    text: 'Admin ne aapka account block ya remove kar diya hai.',
+                    title: 'Session Terminated',
+                    text: 'Your account has been suspended or removed by the administrator. Please contact support for further assistance.',
                     background: '#111',
                     color: '#fff',
                     confirmButtonColor: '#00ff88',
-                    confirmButtonText: 'Theek Hai',
-                    allowOutsideClick: false
+                    confirmButtonText: 'UNDERSTOOD',
+                    allowOutsideClick: false,
+                    showClass: {
+                        popup: 'animate__animated animate__fadeInDown'
+                    },
+                    hideClass: {
+                        popup: 'animate__animated animate__fadeOutUp'
+                    }
                 }).then((result) => {
                     if (result.isConfirmed) {
                         window.location.href = "/logout";
