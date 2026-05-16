@@ -43,23 +43,20 @@ def home():
     if not session.get('user_id'): 
         return redirect(url_for('user_auth'))
     
-    # --- SEARCH LOGIC START ---
     search_query = request.args.get('search', '').strip()
     if search_query:
-        # Search for products by name (case-insensitive)
         all_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all()
     else:
         all_products = Product.query.all()
-    # --- SEARCH LOGIC END ---
     
     return render_template('store.html', products=all_products, search_query=search_query)
 
-# Login Page Route
+# User Auth Routes
 @app.route('/auth', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def user_auth():
     if request.method == 'POST':
-        username = request.form.get('email') # Form mein 'email' field name hai
+        username = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         
@@ -75,7 +72,6 @@ def user_auth():
         
     return render_template('auth.html')
 
-# Register Page Route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -94,14 +90,26 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        return '''<script>
+        return f'''<script>
             alert("Account Created! Now Login.");
-            window.location.href = "/auth";
+            window.location.href = "{url_for('user_auth')}";
         </script>'''
 
     return render_template('register.html')
 
 # --- Admin Routes ---
+
+@app.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        password = request.form.get('pass')
+        if password == 'asharib123':
+            session['admin'] = True
+            return redirect(url_for('admin'))
+        else:
+            flash("Wrong Admin Password!")
+    return render_template('admin_login.html')
+
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if not session.get('admin'): 
@@ -126,13 +134,31 @@ def admin():
     all_u = User.query.all()
     return render_template('admin.html', products=all_p, users=all_u)
 
-@app.route('/admin_login', methods=['GET', 'POST'])
-def admin_login():
-    if request.method == 'POST' and request.form.get('pass') == 'asharib123':
-        session['admin'] = True
+# --- NAYE FEATURES (USER DELETE & EDIT PRODUCT) ---
+
+@app.route('/admin/delete_user/<int:user_id>')
+def delete_user(user_id):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    user = User.query.get(user_id)
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+    return redirect(url_for('admin'))
+
+@app.route('/admin/edit_product/<int:id>', methods=['GET', 'POST'])
+def edit_product(id):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    p = Product.query.get(id)
+    if request.method == 'POST':
+        p.name = request.form['name']
+        p.old_price = request.form['old_price']
+        p.price = request.form['price']
+        p.stock = request.form['stock']
+        p.desc = request.form['desc']
+        p.pic = request.form['pic']
+        db.session.commit()
         return redirect(url_for('admin'))
-    return '''<body style="background:#111;color:white;text-align:center;padding-top:100px;">
-              <form method="post"><h2>Admin Panel</h2><input type="password" name="pass"><button>Login</button></form></body>'''
+    return render_template('edit_product.html', p=p)
 
 @app.route('/admin/toggle_block/<int:user_id>')
 def toggle_block(user_id):
