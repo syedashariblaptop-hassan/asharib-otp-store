@@ -13,8 +13,8 @@
         h2 { color: #00ff88; margin-top: 0; }
         input, textarea { width: 96%; padding: 12px; margin: 10px 0; background: #000; color: #00ff88; border: 1px solid #333; border-radius: 8px; outline: none; }
         input:focus { border-color: #00ff88; }
-        button { width: 100%; padding: 15px; background: #00ff88; color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; }
-        button:hover { background: white; transform: scale(1.02); }
+        .btn-upload { width: 100%; padding: 15px; background: #00ff88; color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; }
+        .btn-upload:hover { background: white; transform: scale(1.02); }
 
         /* List Styling */
         .section-title { color: #00ff88; border-left: 4px solid #00ff88; padding-left: 10px; margin: 40px 0 20px 0; }
@@ -23,12 +23,15 @@
         .delete-btn:hover { background: white; color: red; }
 
         /* User Table */
-        .user-table { width: 100%; border-collapse: collapse; background: #111; border-radius: 10px; overflow: hidden; }
+        .user-table { width: 100%; border-collapse: collapse; background: #111; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
         .user-table th, .user-table td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
         .user-table th { background: #00ff88; color: black; }
-        .user-email { color: #00ff88; font-weight: bold; }
+        .status-active { color: #00ff88; font-weight: bold; }
+        .status-blocked { color: #ff4444; font-weight: bold; }
         
-        .footer-links { text-align: center; margin-top: 50px; }
+        .block-btn { padding: 6px 12px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 13px; }
+
+        .footer-links { text-align: center; margin-top: 50px; padding-bottom: 30px; }
         .footer-links a { color: #888; text-decoration: none; margin: 0 15px; font-size: 14px; }
         .footer-links a:hover { color: #00ff88; }
     </style>
@@ -44,15 +47,15 @@
     <div class="box">
         <h2><i class="fas fa-plus-circle"></i> Add New Product</h2>
         <form method="POST">
-            <input type="text" name="name" placeholder="Product Name (e.g., WhatsApp UK)" required>
+            <input type="text" name="name" placeholder="Product Name" required>
             <div style="display: flex; gap: 10px;">
-                <input type="text" name="old_price" placeholder="Original Price (Rs. 400)" required>
-                <input type="text" name="price" placeholder="Discount Price (Rs. 200)" required>
+                <input type="text" name="old_price" placeholder="Original Price (Rs.)" required>
+                <input type="text" name="price" placeholder="Discount Price (Rs.)" required>
             </div>
-            <input type="text" name="stock" placeholder="Stock Quantity (e.g., 100 Numbers)" required>
+            <input type="text" name="stock" placeholder="Stock Quantity" required>
             <input type="text" name="pic" placeholder="Image URL Link" required>
             <textarea name="desc" rows="3" placeholder="Short Description..." required></textarea>
-            <button type="submit">UPLOAD TO STORE</button>
+            <button type="submit" class="btn-upload">UPLOAD TO STORE</button>
         </form>
     </div>
 
@@ -60,17 +63,29 @@
     <table class="user-table">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>User Email</th>
+                <th>Username</th>
                 <th>Password</th>
+                <th>Status</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
             {% for u in users %}
             <tr>
-                <td>{{ u.id }}</td>
-                <td class="user-email">{{ u.email }}</td>
-                <td style="color: #888;">{{ u.password }}</td>
+                <td>{{ u.username }}</td>
+                <td style="color: #666;">{{ u.password }}</td>
+                <td>
+                    {% if u.is_blocked %}
+                        <span class="status-blocked">BLOCKED</span>
+                    {% else %}
+                        <span class="status-active">ACTIVE</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/admin/toggle_block/{{ u.id }}" class="block-btn" style="background: {{ 'orange' if u.is_blocked else 'red' }};">
+                        {{ 'Unblock' if u.is_blocked else 'Block User' }}
+                    </a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -89,27 +104,7 @@
         </a>
     </div>
     {% endfor %}
-<h2>Registered Customers</h2>
-<table border="1" style="width:100%; color:white; background:#222;">
-    <tr>
-        <th>Username</th>
-        <th>Status</th>
-        <th>Action</th>
-    </tr>
-    {% for user in users %}
-    <tr>
-        <td>{{ user.username }}</td>
-        <td>{{ 'BLOCKED' if user.is_blocked else 'ACTIVE' }}</td>
-        <td>
-            <a href="/admin/toggle_block/{{ user.id }}">
-                <button style="background:red; color:white; cursor:pointer;">
-                    {{ 'Unblock User' if user.is_blocked else 'Block User' }}
-                </button>
-            </a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+
     <div class="footer-links">
         <a href="/"><i class="fas fa-store"></i> View Store</a>
         <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>

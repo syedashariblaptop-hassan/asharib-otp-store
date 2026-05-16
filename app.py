@@ -25,9 +25,12 @@ class Product(db.Model):
 with app.app_context():
     db.create_all()
 
+# --- Routes ---
+
 @app.route('/')
 def home():
-    if not session.get('user_logged_in'): return redirect(url_for('user_auth'))
+    if not session.get('user_id'): 
+        return redirect(url_for('user_auth'))
     all_products = Product.query.all()
     return render_template('store.html', products=all_products)
 
@@ -37,14 +40,14 @@ def user_auth():
 
 @app.route('/register_user', methods=['POST'])
 def register_user():
-    email = request.form.get('email')
-    password = request.form.get('pass')
-    if not User.query.filter_by(email=email).first():
-        new_user = User(email=email, password=password)
+    username = request.form.get('username') # Aapne pehle email likha tha, ab username hai
+    password = request.form.get('password')
+    if not User.query.filter_by(username=username).first():
+        new_user = User(username=username, password=password)
         db.session.add(new_user)
         db.session.commit()
         return render_template('congrats.html')
-    return "Email already exists!"
+    return "Username already exists!"
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -53,29 +56,39 @@ def login():
     user = User.query.filter_by(username=username).first()
     
     if user and user.password == password:
+        # Block check
         if user.is_blocked:
             return '''<script>
                 alert("Your account has been suspended. You cannot use this website. Please contact the administrator for more information.");
-                window.location.href = "/login";
+                window.location.href = "/auth";
             </script>'''
         
         session['user_id'] = user.id
-        return redirect(url_for('store'))
+        return redirect(url_for('home'))
     
     return "Invalid credentials"
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
-    if not session.get('admin'): return redirect(url_for('admin_login'))
+    if not session.get('admin'): 
+        return redirect(url_for('admin_login'))
+    
     if request.method == 'POST':
-        new_p = Product(name=request.form['name'], old_price=request.form['old_price'], price=request.form['price'], stock=request.form['stock'], desc=request.form['desc'], pic=request.form['pic'])
+        new_p = Product(
+            name=request.form['name'], 
+            old_price=request.form['old_price'], 
+            price=request.form['price'], 
+            stock=request.form['stock'], 
+            desc=request.form['desc'], 
+            pic=request.form['pic']
+        )
         db.session.add(new_p)
         db.session.commit()
         return redirect(url_for('admin'))
     
     all_p = Product.query.all()
-    all_u = User.query.all() # Admin can see users
-   return render_template('admin.html', products=all_p, users=all_u)
+    all_u = User.query.all()
+    return render_template('admin.html', products=all_p, users=all_u)
 
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
@@ -85,41 +98,30 @@ def admin_login():
     return '''<body style="background:#111;color:white;text-align:center;padding-top:100px;">
               <form method="post"><h2>Admin Panel</h2><input type="password" name="pass"><button>Login</button></form></body>'''
 
+@app.route('/admin/toggle_block/<int:user_id>')
+def toggle_block(user_id):
+    if not session.get('admin'): 
+        return redirect(url_for('admin_login'))
+    
+    user = User.query.get(user_id)
+    if user:
+        user.is_blocked = not user.is_blocked
+        db.session.commit()
+    return redirect(url_for('admin'))
+
 @app.route('/delete/<int:id>')
 def delete(id):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
     p = Product.query.get(id)
-    if p: db.session.delete(p)
-    db.session.commit()
-    return redirect(url_for('admin'))
-    @app.route('/')
-def home():
-    return redirect(url_for('store'))
-@app.route('/admin/toggle_block/<int:user_id>')
-
-def toggle_block(user_id):
-
-    if not session.get('admin'): 
-
-        return redirect(url_for('admin_login'))
-
-    user = User.query.get(user_id)
-
-    if user:
-
-        user.is_blocked = not user.is_blocked
-
+    if p: 
+        db.session.delete(p)
         db.session.commit()
-
     return redirect(url_for('admin'))
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('user_auth'))
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
-    @app.route('/admin/toggle_block/<int:user_id>')
-def toggle_block(user_id):
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
-        
-    user = User.query.get(user_id)
-    if user:
-        user.is_blocked = not user.is_blocked
-        db.session.commit()
-    return redirect(url_for('admin'))
+    app.run(host='0.0.0.0', port=10000)
