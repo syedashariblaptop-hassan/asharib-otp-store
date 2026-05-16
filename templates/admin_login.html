@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Asharib Tech</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Poppins', sans-serif; }
+        .login-card { background: #111; padding: 40px; border-radius: 20px; border: 1px solid #00ff8833; box-shadow: 0 0 30px rgba(0,255,136,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { color: #00ff88; font-size: 22px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; }
+        input { width: 100%; padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; color: #fff; margin-bottom: 20px; outline: none; }
+        input:focus { border-color: #00ff88; }
+        button { width: 100%; padding: 15px; background: #00ff88; color: #000; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #00bd65; transform: translateY(-2px); }
+        .flash { color: #ff4444; background: rgba(255,68,68,0.1); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <i class="fas fa-user-shield" style="font-size: 40px; color: #00ff88; margin-bottom: 15px;"></i>
+        <h2>Admin Access</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <form method="POST"><input type="password" name="pass" placeholder="Enter Admin Key" required><button type="submit">UNLOCK PANEL</button></form>
+    </div>
+</body>
+</html>
