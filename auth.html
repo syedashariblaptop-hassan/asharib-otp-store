@@ -1,17 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <title>Login | Asharib Tech Store</title>
     <style>
-        body { background: #0a0a0a; color: white; font-family: 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .auth-card { background: #1a1a1a; padding: 40px; border-radius: 20px; border: 1px solid #00ff88; width: 350px; text-align: center; box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); }
-        h2 { color: #00ff88; margin-bottom: 20px; }
-        input { width: 90%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; outline: none; }
+        body { 
+            background: #0a0a0a; 
+            color: white; 
+            font-family: 'Poppins', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            padding: 10px; /* Mobile par sides se thodi jagah chorne ke liye */
+        }
+        
+        .auth-card { 
+            background: #1a1a1a; 
+            padding: 30px; 
+            border-radius: 20px; 
+            border: 1px solid #00ff88; 
+            width: 100%; 
+            max-width: 350px; /* Laptop par 350px rahega aur mobile par screen ke mutabiq chota ho jayega */
+            text-align: center; 
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); 
+            box-sizing: border-box; /* Padding ko width ke andar rakhne ke liye */
+        }
+        
+        h2 { color: #00ff88; margin-bottom: 20px; font-size: 24px; }
+        
+        input { 
+            width: 100%; /* Puray card ki width cover karega */
+            padding: 12px; 
+            margin: 10px 0; 
+            background: #000; 
+            border: 1px solid #333; 
+            color: white; 
+            border-radius: 8px; 
+            outline: none; 
+            box-sizing: border-box; 
+        }
+        
         input:focus { border-color: #00ff88; }
-        .btn { background: #00ff88; color: black; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        
+        .btn { 
+            background: #00ff88; 
+            color: black; 
+            border: none; 
+            padding: 12px; 
+            width: 100%; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            transition: 0.3s; 
+        }
+        
         .btn:hover { transform: scale(1.05); }
+        
         .toggle-link { color: #888; font-size: 13px; margin-top: 15px; cursor: pointer; display: block; }
         .toggle-link b { color: #00ff88; }
+
+        /* Mobile specific font adjustment */
+        @media (max-width: 480px) {
+            h2 { font-size: 20px; }
+            .auth-card { padding: 20px; }
+        }
     </style>
 </head>
 <body>
