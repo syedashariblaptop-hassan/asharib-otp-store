@@ -54,11 +54,68 @@
         .sidenav .closebtn { position: absolute; top: 10px; right: 25px; font-size: 36px; }
 
         /* Header */
-        .header-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; margin-top: 90px; width: 100%; }
+        .header-container { display: flex; flex-direction: column; align-items: center; margin-top: 90px; width: 100%; }
         .logo { width: 70px; height: 70px; background: #00ff88; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; box-shadow: 0 0 20px #00ff8855; }
         .logo i { font-size: 35px; color: black; }
         .store-title { color: #00ff88; text-align: center; margin: 0; font-size: 22px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
         
+        /* --- PROFESSIONAL SEARCH BAR CSS --- */
+        .search-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 25px auto;
+            padding: 0 15px;
+        }
+
+        .search-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 14px 20px 14px 45px;
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 15px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+        }
+
+        .search-box i.fa-search {
+            position: absolute;
+            left: 15px;
+            color: #00ff88;
+            font-size: 16px;
+        }
+
+        .search-box button {
+            position: absolute;
+            right: 8px;
+            background: #00ff88;
+            color: black;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .search-box button:hover {
+            background: #00bd65;
+            transform: scale(1.05);
+        }
+
         /* Grid */
         .grid { 
             display: grid; 
@@ -144,37 +201,53 @@
         <p style="color: #666; font-size: 11px; margin-top: 5px;">High-Quality OTP & Activation Solutions</p>
     </div>
 
-    <div class="grid">
-        {% for p in products %}
-        <div class="card">
-            <div class="status-badge">🟢 ONLINE</div>
-            <div class="sale-tag">INSTANT</div>
-            <img src="{{ p.pic }}">
-            <h3>{{ p.name }}</h3>
-            
-            <div class="rating-box">
-                <div class="stars">
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                </div>
-                <span class="rating-text">4.9 ({{ p.reviews if p.reviews else '128' }}+ reviews)</span>
-            </div>
+    <div class="search-container">
+        <form action="/" method="GET" class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" placeholder="Search product (e.g. Netflix)" value="{{ search_query }}">
+            <button type="submit">GO</button>
+        </form>
+    </div>
 
-            <div class="stock-info"><i class="fas fa-check-circle"></i> Stock: {{ p.stock }}</div>
-            
-            <div class="price-row">
-                <span class="price">Rs. {{ p.price }}</span>
-                <span class="old-price">Rs. {{ p.old_price }}</span>
+    <div class="grid">
+        {% if products %}
+            {% for p in products %}
+            <div class="card">
+                <div class="status-badge">🟢 ONLINE</div>
+                <div class="sale-tag">INSTANT</div>
+                <img src="{{ p.pic }}">
+                <h3>{{ p.name }}</h3>
+                
+                <div class="rating-box">
+                    <div class="stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <span class="rating-text">4.9 ({{ p.reviews if p.reviews else '128' }}+ reviews)</span>
+                </div>
+
+                <div class="stock-info"><i class="fas fa-check-circle"></i> Stock: {{ p.stock }}</div>
+                
+                <div class="price-row">
+                    <span class="price">Rs. {{ p.price }}</span>
+                    <span class="old-price">Rs. {{ p.old_price }}</span>
+                </div>
+                
+                <a href="https://wa.me/923232522768?text=Hey! Syed Asharib I want to buy {{ p.name }}" class="btn">
+                    <i class="fab fa-whatsapp"></i> Buy Instant
+                </a>
             </div>
-            
-            <a href="https://wa.me/923232522768?text=Hey! Syed Asharib I want to buy {{ p.name }}" class="btn">
-                <i class="fab fa-whatsapp"></i> Buy Instant
-            </a>
-        </div>
-        {% endfor %}
+            {% endfor %}
+        {% else %}
+            <div style="grid-column: span 2; text-align: center; padding: 50px 20px;">
+                <i class="fas fa-search" style="font-size: 40px; color: #333; margin-bottom: 15px;"></i>
+                <p style="color: #666;">No products found for "{{ search_query }}"</p>
+                <a href="/" style="color: #00ff88; text-decoration: none; font-size: 14px;">Show all products</a>
+            </div>
+        {% endif %}
     </div>
 
     <div id="aboutModal" class="modal">
