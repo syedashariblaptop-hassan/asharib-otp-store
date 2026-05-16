@@ -11,6 +11,13 @@
         
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
         .header h1 { font-size: 20px; }
+
+        /* Stats Section */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #111; padding: 15px; border-radius: 12px; border: 1px solid #222; text-align: center; border-bottom: 3px solid #00ff88; }
+        .stat-card i { color: #00ff88; font-size: 20px; margin-bottom: 5px; }
+        .stat-card h3 { margin: 5px 0; font-size: 20px; }
+        .stat-card p { margin: 0; font-size: 12px; color: #888; }
         
         /* Form Styling */
         .box { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #00ff88; box-shadow: 0 0 15px rgba(0, 255, 136, 0.1); margin-bottom: 30px; }
@@ -31,8 +38,8 @@
         .item-card strong { font-size: 14px; }
 
         .action-btns { display: flex; gap: 8px; }
-        .delete-btn { background: #ff4444; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 11px; font-weight: bold; }
-        .edit-btn { background: #3498db; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 11px; font-weight: bold; }
+        .delete-btn { background: #ff4444; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .edit-btn { background: #3498db; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
 
         /* Responsive Table */
         .table-responsive { width: 100%; overflow-x: auto; background: #111; border-radius: 10px; border: 1px solid #222; }
@@ -43,17 +50,17 @@
         .status-active { color: #00ff88; font-weight: bold; }
         .status-blocked { color: #ff4444; font-weight: bold; }
         
-        .block-btn { padding: 6px 10px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; white-space: nowrap; }
-        .remove-user-btn { padding: 6px 10px; border-radius: 5px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; font-weight: bold; margin-left: 5px; }
+        .block-btn { padding: 6px 10px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; white-space: nowrap; display: inline-block; }
+        .remove-user-btn { padding: 6px 10px; border-radius: 5px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; font-weight: bold; margin-left: 5px; display: inline-block; }
 
         .footer-links { text-align: center; margin-top: 40px; padding-bottom: 30px; display: flex; justify-content: center; gap: 20px; }
         .footer-links a { color: #888; text-decoration: none; font-size: 14px; }
 
-        /* Desktop view adjustments */
         @media (min-width: 768px) {
             .header h1 { font-size: 28px; }
             h2, .section-title { font-size: 22px; }
             .item-card strong { font-size: 18px; }
+            .stats-grid { gap: 30px; }
         }
     </style>
 </head>
@@ -63,6 +70,19 @@
     <div class="header">
         <h1><i class="fas fa-user-shield"></i> Admin Panel</h1>
         <div style="color: #00ff88; font-size: 14px;">Status: Online</div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <h3>{{ users|length }}</h3>
+            <p>Total Customers</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-box"></i>
+            <h3>{{ products|length }}</h3>
+            <p>Total Products</p>
+        </div>
     </div>
 
     <div class="box">
@@ -105,10 +125,10 @@
                     </td>
                     <td style="white-space: nowrap;">
                         <a href="/admin/toggle_block/{{ u.id }}" class="block-btn" style="background: {{ 'orange' if u.is_blocked else 'red' }};">
-                            {{ 'Unblock' if u.is_blocked else 'Block' }}
+                            <i class="fas fa-ban"></i> {{ 'Unblock' if u.is_blocked else 'Block' }}
                         </a>
-                        <a href="/admin/delete_user/{{ u.id }}" class="remove-user-btn" onclick="return confirm('Waqai is account ko remove krna ha?')">
-                            <i class="fas fa-user-minus"></i> Remove
+                        <a href="/admin/delete_user/{{ u.id }}" class="remove-user-btn" onclick="return confirm('Waqai is account ko hamesha k liye remove krna ha?')">
+                            <i class="fas fa-trash-alt"></i> Remove
                         </a>
                     </td>
                 </tr>
@@ -129,7 +149,7 @@
                 <i class="fas fa-edit"></i> Edit
             </a>
             <a href="/delete/{{ p.id }}" class="delete-btn" onclick="return confirm('Delete this product?')">
-                <i class="fas fa-trash"></i>
+                <i class="fas fa-trash"></i> Delete
             </a>
         </div>
     </div>
