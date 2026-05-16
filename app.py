@@ -1,13 +1,12 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
 
-# --- DATABASE CONFIGURATION START ---
+# --- DATABASE CONFIGURATION ---
 db_url = os.environ.get('DATABASE_URL')
-
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
@@ -15,9 +14,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-# --- DATABASE CONFIGURATION END ---
 
-# Database Models
+# --- Models ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -32,13 +30,10 @@ class Product(db.Model):
     stock = db.Column(db.String(50))
     desc = db.Column(db.Text)
     pic = db.Column(db.String(300))
-    # Fake Ratings columns
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
 
-# --- DATABASE LOGIC (Data Safe Mode) ---
 with app.app_context():
-    # db.drop_all()  <-- Main ne ye line hata di hai taake data delete na ho
     db.create_all() 
 
 # --- Routes ---
@@ -50,47 +45,54 @@ def home():
     all_products = Product.query.all()
     return render_template('store.html', products=all_products)
 
-@app.route('/auth')
+# Login Page Route
+@app.route('/auth', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def user_auth():
+    if request.method == 'POST':
+        username = request.form.get('email') # Form mein 'email' field name hai
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.password == password:
+            if user.is_blocked:
+                flash("Your account is suspended. Contact Admin.")
+                return redirect(url_for('user_auth'))
+            session['user_id'] = user.id
+            return redirect(url_for('home'))
+        
+        flash("Invalid email or password!")
+        return redirect(url_for('user_auth'))
+        
     return render_template('auth.html')
 
-@app.route('/register_user', methods=['POST'])
-def register_user():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    
-    if not username or not password:
-        return "Username and Password are required!"
+# Register Page Route (Naya Add Kiya Hai)
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('email')
+        password = request.form.get('password')
+        
+        if not username or not password:
+            flash("All fields are required!")
+            return redirect(url_for('register'))
 
-    if not User.query.filter_by(username=username).first():
+        if User.query.filter_by(username=username).first():
+            flash("User already exists with this email!")
+            return redirect(url_for('register'))
+
         new_user = User(username=username, password=password)
         db.session.add(new_user)
         db.session.commit()
+        
         return '''<script>
-            alert("Registration Successful! Please Login.");
+            alert("Account Created! Now Login.");
             window.location.href = "/auth";
         </script>'''
-    
-    return "Username already exists!"
 
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    user = User.query.filter_by(username=username).first()
-    
-    if user and user.password == password:
-        if user.is_blocked:
-            return '''<script>
-                alert("Your account has been suspended. Please contact the administrator.");
-                window.location.href = "/auth";
-            </script>'''
-        
-        session['user_id'] = user.id
-        return redirect(url_for('home'))
-    
-    return "Invalid credentials! Please try again."
+    return render_template('register.html')
 
+# --- Admin Routes ---
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if not session.get('admin'): 
@@ -127,7 +129,6 @@ def admin_login():
 def toggle_block(user_id):
     if not session.get('admin'): 
         return redirect(url_for('admin_login'))
-    
     user = User.query.get(user_id)
     if user:
         user.is_blocked = not user.is_blocked
