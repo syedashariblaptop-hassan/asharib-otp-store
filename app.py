@@ -36,10 +36,10 @@ class Product(db.Model):
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
 
-# --- DATABASE REFRESH LOGIC ---
+# --- DATABASE LOGIC (Data Safe Mode) ---
 with app.app_context():
-    db.drop_all()   # Ye line purana error wala structure saaf karegi
-    db.create_all() # Ye naye professional structure ko banayegi
+    # db.drop_all()  <-- Main ne ye line hata di hai taake data delete na ho
+    db.create_all() 
 
 # --- Routes ---
 
