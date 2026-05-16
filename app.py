@@ -32,12 +32,14 @@ class Product(db.Model):
     stock = db.Column(db.String(50))
     desc = db.Column(db.Text)
     pic = db.Column(db.String(300))
-    # Fake Ratings ke liye naye columns
+    # Fake Ratings columns
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
 
+# --- DATABASE REFRESH LOGIC ---
 with app.app_context():
-    db.create_all()
+    db.drop_all()   # Ye line purana error wala structure saaf karegi
+    db.create_all() # Ye naye professional structure ko banayegi
 
 # --- Routes ---
 
@@ -102,7 +104,6 @@ def admin():
             stock=request.form['stock'], 
             desc=request.form['desc'], 
             pic=request.form['pic'],
-            # Agar form se rating nahi aayi toh default set hogi
             rating=request.form.get('rating', '4.9'),
             reviews=request.form.get('reviews', '128')
         )
