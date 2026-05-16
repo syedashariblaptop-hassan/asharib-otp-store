@@ -1,10 +1,24 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+
+# --- DATABASE CONFIGURATION START ---
+# Render se Database URL uthaye ga
+db_url = os.environ.get('DATABASE_URL')
+
+if db_url and db_url.startswith("postgres://"):
+    # Render ka link "postgres://" se shuru hota hai lekin Python ko "postgresql://" chahiye hota hai
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+# Agar link mil gaya toh PostgreSQL use karega, warna purani 'database.db' file
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
+# --- DATABASE CONFIGURATION END ---
 
 # Database Models
 class User(db.Model):
@@ -22,6 +36,7 @@ class Product(db.Model):
     desc = db.Column(db.Text)
     pic = db.Column(db.String(300))
 
+# Database table banane ke liye
 with app.app_context():
     db.create_all()
 
@@ -50,7 +65,6 @@ def register_user():
         new_user = User(username=username, password=password)
         db.session.add(new_user)
         db.session.commit()
-        # Congrats page agar nahi hai to direct login par bhej dega
         return '''<script>
             alert("Registration Successful! Please Login.");
             window.location.href = "/auth";
@@ -65,7 +79,6 @@ def login():
     user = User.query.filter_by(username=username).first()
     
     if user and user.password == password:
-        # Block status check karein
         if user.is_blocked:
             return '''<script>
                 alert("Your account has been suspended. Please contact the administrator.");
@@ -133,5 +146,4 @@ def logout():
     return redirect(url_for('user_auth'))
 
 if __name__ == "__main__":
-    # Render ka default port 10000 hai
     app.run(host='0.0.0.0', port=10000)
