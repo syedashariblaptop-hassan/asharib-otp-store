@@ -6,14 +6,11 @@ app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
 
 # --- DATABASE CONFIGURATION START ---
-# Render se Database URL uthaye ga
 db_url = os.environ.get('DATABASE_URL')
 
 if db_url and db_url.startswith("postgres://"):
-    # Render ka link "postgres://" se shuru hota hai lekin Python ko "postgresql://" chahiye hota hai
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-# Agar link mil gaya toh PostgreSQL use karega, warna purani 'database.db' file
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -35,8 +32,10 @@ class Product(db.Model):
     stock = db.Column(db.String(50))
     desc = db.Column(db.Text)
     pic = db.Column(db.String(300))
+    # Fake Ratings ke liye naye columns
+    rating = db.Column(db.String(10), default="4.9")
+    reviews = db.Column(db.String(10), default="128")
 
-# Database table banane ke liye
 with app.app_context():
     db.create_all()
 
@@ -102,7 +101,10 @@ def admin():
             price=request.form['price'], 
             stock=request.form['stock'], 
             desc=request.form['desc'], 
-            pic=request.form['pic']
+            pic=request.form['pic'],
+            # Agar form se rating nahi aayi toh default set hogi
+            rating=request.form.get('rating', '4.9'),
+            reviews=request.form.get('reviews', '128')
         )
         db.session.add(new_p)
         db.session.commit()

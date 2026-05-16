@@ -1,15 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <title>Asharib Tech Store</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #0a0a0a; color: white; font-family: sans-serif; margin: 0; padding: 15px; transition: 0.5s; overflow-x: hidden; }
+        /* Box-sizing har cheez ko screen ke andar rakhti hai */
+        * { box-sizing: border-box; }
+
+        body { 
+            background: #000000; 
+            color: white; 
+            font-family: 'Poppins', sans-serif; 
+            margin: 0; 
+            padding: 10px; 
+            transition: 0.5s; 
+            overflow-x: hidden; 
+            width: 100%;
+        }
         
         /* 3 Lines Menu (Hamburger) */
-        .menu-icon { position: fixed; top: 20px; left: 20px; font-size: 25px; color: #00ff88; cursor: pointer; z-index: 1001; }
+        .menu-icon { position: fixed; top: 15px; left: 15px; font-size: 22px; color: #00ff88; cursor: pointer; z-index: 1001; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px; }
         
         /* Sidebar Styling */
         .sidenav { height: 100%; width: 0; position: fixed; z-index: 1002; top: 0; left: 0; background-color: #111; overflow-x: hidden; transition: 0.5s; padding-top: 60px; border-right: 1px solid #00ff88; }
@@ -17,42 +30,65 @@
         .sidenav a:hover { color: #00ff88; background: #1a1a1a; }
         .sidenav .closebtn { position: absolute; top: 10px; right: 25px; font-size: 36px; }
 
-        /* Modal (Popup) for About/Privacy */
-        .modal { display: none; position: fixed; z-index: 1003; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); overflow: auto; }
-        .modal-content { background-color: #151515; margin: 15% auto; padding: 20px; border: 1px solid #00ff88; width: 85%; border-radius: 15px; line-height: 1.6; }
-        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-
-        /* Header & Cards Styling */
-        .header-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; margin-top: 20px; }
-        .logo { width: 70px; height: 70px; background: #00ff88; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; box-shadow: 0 0 20px #00ff8855; }
-        .logo i { font-size: 35px; color: black; }
-        .store-title { color: #00ff88; text-align: center; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; }
+        /* Header & Logo */
+        .header-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; margin-top: 40px; width: 100%; }
+        .logo { width: 60px; height: 60px; background: #00ff88; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; box-shadow: 0 0 15px #00ff8855; }
+        .logo i { font-size: 30px; color: black; }
+        .store-title { color: #00ff88; text-align: center; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; width: 100%; }
         
-        /* Grid setup for Mobile and Desktop */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        /* Grid setup - Mobile par 2 products dikhayega */
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
+            width: 100%;
+            padding: 5px;
+        }
         
-        /* Laptop/Desktop ke liye grid set karein */
+        /* Laptop/Desktop ke liye grid */
         @media (min-width: 768px) {
-            .grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-            .store-title { font-size: 32px; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+            .store-title { font-size: 30px; }
+            .header-container { margin-top: 20px; }
+            .logo { width: 80px; height: 80px; }
         }
 
-        .card { background: #151515; padding: 12px; border-radius: 15px; border: 1px solid #222; position: relative; display: flex; flex-direction: column; }
-        .sale-tag { position: absolute; top: 8px; right: 8px; background: #ff4444; color: white; padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; }
-        .card img { width: 100%; border-radius: 10px; height: 140px; object-fit: cover; }
+        /* Card Styling */
+        .card { 
+            background: #151515; 
+            padding: 10px; 
+            border-radius: 12px; 
+            border: 1px solid #222; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            width: 100%;
+        }
+        .sale-tag { position: absolute; top: 5px; right: 5px; background: #ff4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; z-index: 1; }
+        .card img { width: 100%; border-radius: 8px; height: 120px; object-fit: cover; }
         
-        @media (min-width: 768px) { .card img { height: 180px; } }
+        @media (min-width: 768px) { .card img { height: 200px; } }
 
-        .card h3 { font-size: 16px; margin: 10px 0 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .price { color: #00ff88; font-size: 18px; font-weight: bold; }
-        .old-price { text-decoration: line-through; color: #666; font-size: 14px; margin-right: 5px; }
+        .card h3 { font-size: 14px; margin: 8px 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #eee; }
+        
+        /* Ratings Style */
+        .rating-box { display: flex; align-items: center; gap: 4px; margin: 4px 0; }
+        .stars { color: #ffcc00; font-size: 10px; }
+        .rating-text { color: #888; font-size: 10px; }
 
-        .btn { background: #25D366; color: white; padding: 10px; display: block; text-align: center; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 14px; }
+        .price { color: #00ff88; font-size: 16px; font-weight: bold; display: block; }
+        .old-price { text-decoration: line-through; color: #666; font-size: 12px; margin-bottom: 2px; display: block; }
+
+        .btn { background: #25D366; color: white; padding: 8px; display: block; text-align: center; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 12px; transition: 0.3s; }
+        .btn:active { transform: scale(0.95); }
         
         /* Support Button */
-        .support-btn { position: fixed; bottom: 20px; right: 20px; background: #00ff88; color: black; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; font-size: 25px; z-index: 1000; animation: pulse 2s infinite; }
+        .support-btn { position: fixed; bottom: 15px; right: 15px; background: #00ff88; color: black; width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; font-size: 22px; z-index: 1000; box-shadow: 0 0 10px #00ff88; }
         
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); } }
+        /* Modal (Popup) */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-content { background-color: #1a1a1a; margin: 20% auto; padding: 20px; border: 1px solid #00ff88; width: 90%; max-width: 400px; border-radius: 15px; position: relative; }
+        .close-modal { color: #00ff88; position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -79,7 +115,19 @@
             <div class="sale-tag">LIMITED</div>
             <img src="{{ p.pic }}">
             <h3>{{ p.name }}</h3>
-            <p style="color:#00ff88; font-size: 11px; margin: 5px 0;"><b>Stock:</b> {{ p.stock }} Available</p>
+            
+            <div class="rating-box">
+                <div class="stars">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+                <span class="rating-text">4.9 ({{ p.reviews if p.reviews else '128' }})</span>
+            </div>
+
+            <p style="color:#00ff88; font-size: 10px; margin: 4px 0;"><b>Stock:</b> {{ p.stock }}</p>
             <div>
                 <span class="old-price">Rs. {{ p.old_price }}</span>
                 <span class="price">Rs. {{ p.price }}</span>
@@ -92,16 +140,16 @@
     <div id="aboutModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('aboutModal')">&times;</span>
-            <h2 style="color:#00ff88;">About Asharib Tech Store</h2>
-            <p style="font-size: 14px;">Welcome to <b>Asharib Tech Store</b>, the leading provider of digital activation services. We specialize in providing high-quality, reliable, and instant OTP solutions for global platforms.</p>
+            <h2 style="color:#00ff88;">About Us</h2>
+            <p style="font-size: 13px; color: #ccc;">Welcome to <b>Asharib Tech Store</b>. We provide high-quality digital OTP solutions globally.</p>
         </div>
     </div>
 
     <div id="privacyModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('privacyModal')">&times;</span>
-            <h2 style="color:#00ff88;">Privacy Policy</h2>
-            <p style="font-size: 14px;">At Asharib Tech Store, your privacy is our top priority. Your personal information and purchase history are encrypted and stored securely.</p>
+            <h2 style="color:#00ff88;">Privacy</h2>
+            <p style="font-size: 13px; color: #ccc;">Your data is 100% encrypted and safe with us.</p>
         </div>
     </div>
 
@@ -112,13 +160,7 @@
         function closeNav() { document.getElementById("mySidenav").style.width = "0"; }
         function showModal(id) { document.getElementById(id).style.display = "block"; closeNav(); }
         function closeModal(id) { document.getElementById(id).style.display = "none"; }
-        
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            if (event.target.className === 'modal') {
-                event.target.style.display = "none";
-            }
-        }
+        window.onclick = function(event) { if (event.target.className === 'modal') { event.target.style.display = "none"; } }
     </script>
 
 </body>
