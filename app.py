@@ -42,8 +42,17 @@ with app.app_context():
 def home():
     if not session.get('user_id'): 
         return redirect(url_for('user_auth'))
-    all_products = Product.query.all()
-    return render_template('store.html', products=all_products)
+    
+    # --- SEARCH LOGIC START ---
+    search_query = request.args.get('search', '').strip()
+    if search_query:
+        # Search for products by name (case-insensitive)
+        all_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all()
+    else:
+        all_products = Product.query.all()
+    # --- SEARCH LOGIC END ---
+    
+    return render_template('store.html', products=all_products, search_query=search_query)
 
 # Login Page Route
 @app.route('/auth', methods=['GET', 'POST'])
@@ -66,7 +75,7 @@ def user_auth():
         
     return render_template('auth.html')
 
-# Register Page Route (Naya Add Kiya Hai)
+# Register Page Route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
