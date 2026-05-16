@@ -1,9 +1,14 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
+
+# --- SOCKET IO CONFIGURATION ---
+# 'eventlet' ya 'gevent' deployment ke liye behtar hote hain
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # --- DATABASE CONFIGURATION ---
 db_url = os.environ.get('DATABASE_URL')
@@ -43,6 +48,12 @@ def home():
     if not session.get('user_id'): 
         return redirect(url_for('user_auth'))
     
+    # Real-time check: Agar user block ho chuka hai to home page se nikaal do
+    user = User.query.get(session['user_id'])
+    if not user or user.is_blocked:
+        session.clear()
+        return redirect(url_for('user_auth'))
+
     search_query = request.args.get('search', '').strip()
     if search_query:
         all_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all()
@@ -134,16 +145,33 @@ def admin():
     all_u = User.query.all()
     return render_template('admin.html', products=all_p, users=all_u)
 
-# --- NAYE FEATURES (USER DELETE & EDIT PRODUCT) ---
+# --- REAL-TIME ACTIONS (FORCE LOGOUT) ---
 
 @app.route('/admin/delete_user/<int:user_id>')
 def delete_user(user_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
+        # Signal bhejna: User ko foran logout karo
+        socketio.emit('force_logout', {'user_id': user_id})
         db.session.delete(user)
         db.session.commit()
     return redirect(url_for('admin'))
+
+@app.route('/admin/toggle_block/<int:user_id>')
+def toggle_block(user_id):
+    if not session.get('admin'): 
+        return redirect(url_for('admin_login'))
+    user = User.query.get(user_id)
+    if user:
+        user.is_blocked = not user.is_blocked
+        db.session.commit()
+        # Agar block kiya hai to logout signal bhejo
+        if user.is_blocked:
+            socketio.emit('force_logout', {'user_id': user_id})
+    return redirect(url_for('admin'))
+
+# --- Other Product Routes ---
 
 @app.route('/admin/edit_product/<int:id>', methods=['GET', 'POST'])
 def edit_product(id):
@@ -160,16 +188,6 @@ def edit_product(id):
         return redirect(url_for('admin'))
     return render_template('edit_product.html', p=p)
 
-@app.route('/admin/toggle_block/<int:user_id>')
-def toggle_block(user_id):
-    if not session.get('admin'): 
-        return redirect(url_for('admin_login'))
-    user = User.query.get(user_id)
-    if user:
-        user.is_blocked = not user.is_blocked
-        db.session.commit()
-    return redirect(url_for('admin'))
-
 @app.route('/delete/<int:id>')
 def delete(id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
@@ -185,4 +203,5 @@ def logout():
     return redirect(url_for('user_auth'))
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=10000)
+    # Render ke liye socketio.run use karna zaroori hai
+    socketio.run(app, host='0.0.0.0', port=10000)
