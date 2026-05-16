@@ -40,13 +40,22 @@ def user_auth():
 
 @app.route('/register_user', methods=['POST'])
 def register_user():
-    username = request.form.get('username') # Aapne pehle email likha tha, ab username hai
+    username = request.form.get('username')
     password = request.form.get('password')
+    
+    if not username or not password:
+        return "Username and Password are required!"
+
     if not User.query.filter_by(username=username).first():
         new_user = User(username=username, password=password)
         db.session.add(new_user)
         db.session.commit()
-        return render_template('congrats.html')
+        # Congrats page agar nahi hai to direct login par bhej dega
+        return '''<script>
+            alert("Registration Successful! Please Login.");
+            window.location.href = "/auth";
+        </script>'''
+    
     return "Username already exists!"
 
 @app.route('/login', methods=['POST'])
@@ -56,17 +65,17 @@ def login():
     user = User.query.filter_by(username=username).first()
     
     if user and user.password == password:
-        # Block check
+        # Block status check karein
         if user.is_blocked:
             return '''<script>
-                alert("Your account has been suspended. You cannot use this website. Please contact the administrator for more information.");
+                alert("Your account has been suspended. Please contact the administrator.");
                 window.location.href = "/auth";
             </script>'''
         
         session['user_id'] = user.id
         return redirect(url_for('home'))
     
-    return "Invalid credentials"
+    return "Invalid credentials! Please try again."
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
@@ -124,4 +133,5 @@ def logout():
     return redirect(url_for('user_auth'))
 
 if __name__ == "__main__":
+    # Render ka default port 10000 hai
     app.run(host='0.0.0.0', port=10000)
