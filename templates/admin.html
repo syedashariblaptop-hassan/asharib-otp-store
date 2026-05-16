@@ -30,11 +30,13 @@
         .item-card { background: #1a1a1a; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px solid #222; }
         .item-card strong { font-size: 14px; }
 
+        .action-btns { display: flex; gap: 8px; }
         .delete-btn { background: #ff4444; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 11px; font-weight: bold; }
+        .edit-btn { background: #3498db; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 11px; font-weight: bold; }
 
         /* Responsive Table */
         .table-responsive { width: 100%; overflow-x: auto; background: #111; border-radius: 10px; border: 1px solid #222; }
-        .user-table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        .user-table { width: 100%; border-collapse: collapse; min-width: 550px; }
         .user-table th, .user-table td { padding: 12px; text-align: left; border-bottom: 1px solid #222; font-size: 13px; }
         .user-table th { background: #00ff88; color: black; }
         
@@ -42,6 +44,7 @@
         .status-blocked { color: #ff4444; font-weight: bold; }
         
         .block-btn { padding: 6px 10px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; white-space: nowrap; }
+        .remove-user-btn { padding: 6px 10px; border-radius: 5px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; font-weight: bold; margin-left: 5px; }
 
         .footer-links { text-align: center; margin-top: 40px; padding-bottom: 30px; display: flex; justify-content: center; gap: 20px; }
         .footer-links a { color: #888; text-decoration: none; font-size: 14px; }
@@ -100,9 +103,12 @@
                             <span class="status-active">ACTIVE</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td style="white-space: nowrap;">
                         <a href="/admin/toggle_block/{{ u.id }}" class="block-btn" style="background: {{ 'orange' if u.is_blocked else 'red' }};">
                             {{ 'Unblock' if u.is_blocked else 'Block' }}
+                        </a>
+                        <a href="/admin/delete_user/{{ u.id }}" class="remove-user-btn" onclick="return confirm('Waqai is account ko remove krna ha?')">
+                            <i class="fas fa-user-minus"></i> Remove
                         </a>
                     </td>
                 </tr>
@@ -114,13 +120,18 @@
     <h2 class="section-title"><i class="fas fa-box-open"></i> Manage Store</h2>
     {% for p in products %}
     <div class="item-card">
-        <div style="max-width: 70%;">
+        <div style="max-width: 60%;">
             <strong>{{ p.name }}</strong><br>
             <span style="color: #00ff88; font-size: 14px;">Rs. {{ p.price }}</span>
         </div>
-        <a href="/delete/{{ p.id }}" class="delete-btn" onclick="return confirm('Delete this product?')">
-            <i class="fas fa-trash"></i>
-        </a>
+        <div class="action-btns">
+            <a href="/admin/edit_product/{{ p.id }}" class="edit-btn">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="/delete/{{ p.id }}" class="delete-btn" onclick="return confirm('Delete this product?')">
+                <i class="fas fa-trash"></i>
+            </a>
+        </div>
     </div>
     {% endfor %}
 
