@@ -6,11 +6,13 @@ app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
 
 # --- DATABASE CONFIGURATION ---
+# Is logic se Vercel ko database dhoondne mein asani hogi
+basedir = os.path.abspath(os.path.dirname(__file__))
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///' + os.path.join(basedir, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -21,7 +23,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     is_blocked = db.Column(db.Boolean, default=False)
-    balance = db.Column(db.Float, default=0.0)  # Naya Balance Column
+    balance = db.Column(db.Float, default=0.0)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -34,7 +36,7 @@ class Product(db.Model):
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
 
-# Database tables create karne ke liye
+# Database tables creation
 with app.app_context():
     try:
         db.create_all()
@@ -59,7 +61,6 @@ def home():
     else:
         all_products = Product.query.all()
     
-    # User object bhi bhej rahe hain taake balance nazar aaye
     return render_template('store.html', products=all_products, search_query=search_query, user=user)
 
 @app.route('/auth', methods=['GET', 'POST'])
@@ -107,8 +108,6 @@ def register():
 
     return render_template('register.html')
 
-# --- ADMIN ROUTES ---
-
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -144,13 +143,12 @@ def admin():
     all_u = User.query.all()
     return render_template('admin.html', products=all_p, users=all_u)
 
-# --- NAYA ROUTE: User ka balance update karne ke liye ---
 @app.route('/admin/update_balance/<int:user_id>/<float:amount>')
 def update_balance(user_id, amount):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
-        user.balance += amount  # Balance barhane ke liye
+        user.balance += amount
         db.session.commit()
         flash(f"Balance updated for {user.username}")
     return redirect(url_for('admin'))
