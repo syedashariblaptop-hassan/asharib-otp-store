@@ -1,18 +1,9 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
-
-# Vercel ke liye 'app' variable ka hona lazmi hai
-app.debug = True
-
-# --- SOCKET IO CONFIGURATION ---
-# Note: Vercel serverless hai, isliye SocketIO hamesha active nahi rehta, 
-# lekin ye code error nahi dega.
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # --- DATABASE CONFIGURATION ---
 db_url = os.environ.get('DATABASE_URL')
@@ -65,7 +56,6 @@ def home():
     
     return render_template('store.html', products=all_products, search_query=search_query)
 
-# User Auth Routes
 @app.route('/auth', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def user_auth():
@@ -111,8 +101,6 @@ def register():
 
     return render_template('register.html')
 
-# --- Admin Routes ---
-
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -148,14 +136,11 @@ def admin():
     all_u = User.query.all()
     return render_template('admin.html', products=all_p, users=all_u)
 
-# --- REAL-TIME ACTIONS ---
-
 @app.route('/admin/delete_user/<int:user_id>')
 def delete_user(user_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
-        socketio.emit('force_logout', {'user_id': str(user_id)}, namespace='/')
         db.session.delete(user)
         db.session.commit()
     return redirect(url_for('admin'))
@@ -168,11 +153,7 @@ def toggle_block(user_id):
     if user:
         user.is_blocked = not user.is_blocked
         db.session.commit()
-        if user.is_blocked:
-            socketio.emit('force_logout', {'user_id': str(user_id)}, namespace='/')
     return redirect(url_for('admin'))
-
-# --- Other Product Routes ---
 
 @app.route('/admin/edit_product/<int:id>', methods=['GET', 'POST'])
 def edit_product(id):
@@ -203,6 +184,5 @@ def logout():
     session.clear()
     return redirect(url_for('user_auth'))
 
-# Ye function Vercel ko batata hai ke app chal rahi hai
 if __name__ == "__main__":
     app.run()
