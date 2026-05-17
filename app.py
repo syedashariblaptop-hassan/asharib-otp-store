@@ -6,9 +6,13 @@ from flask_socketio import SocketIO, emit
 app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
 
+# Vercel ke liye 'app' variable ka hona lazmi hai
+app.debug = True
+
 # --- SOCKET IO CONFIGURATION ---
-# Humne broadcast allow kiya hai taake signal har jagah jaye
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+# Note: Vercel serverless hai, isliye SocketIO hamesha active nahi rehta, 
+# lekin ye code error nahi dega.
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # --- DATABASE CONFIGURATION ---
 db_url = os.environ.get('DATABASE_URL')
@@ -144,17 +148,14 @@ def admin():
     all_u = User.query.all()
     return render_template('admin.html', products=all_p, users=all_u)
 
-# --- REAL-TIME ACTIONS (FORCED UPDATES) ---
+# --- REAL-TIME ACTIONS ---
 
 @app.route('/admin/delete_user/<int:user_id>')
 def delete_user(user_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
-        # Step 1: Foran signal bhejo (DB se delete karne se PEHLE)
         socketio.emit('force_logout', {'user_id': str(user_id)}, namespace='/')
-        
-        # Step 2: DB se udhao
         db.session.delete(user)
         db.session.commit()
     return redirect(url_for('admin'))
@@ -167,11 +168,8 @@ def toggle_block(user_id):
     if user:
         user.is_blocked = not user.is_blocked
         db.session.commit()
-        
-        # Agar block ho gaya hai, to usey dhakke maar kar nikalo
         if user.is_blocked:
             socketio.emit('force_logout', {'user_id': str(user_id)}, namespace='/')
-            
     return redirect(url_for('admin'))
 
 # --- Other Product Routes ---
@@ -205,7 +203,6 @@ def logout():
     session.clear()
     return redirect(url_for('user_auth'))
 
+# Ye function Vercel ko batata hai ke app chal rahi hai
 if __name__ == "__main__":
-    # Host aur Port ko environment variables se uthana behtar hota hai
-    port = int(os.environ.get("PORT", 10000))
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    app.run()
