@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Asharib Tech Store</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         
@@ -15,15 +16,14 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            /* Aapka original dark background */
             background: #000000;
         }
 
         .login-card {
-            background: #111111; /* Dark Card */
+            background: #111111;
             padding: 40px 30px;
             border-radius: 25px;
-            border: 1px solid #222; /* Subtle border */
+            border: 1px solid #222;
             box-shadow: 0 10px 40px rgba(0,255,136,0.05);
             width: 90%;
             max-width: 400px;
@@ -62,7 +62,6 @@
         .checkbox-group input { width: auto; cursor: pointer; }
         .forgot-pass { color: #ff4444; text-decoration: none; font-weight: 600; }
 
-        /* Dastur Style Button but with your theme colors */
         .login-btn {
             background: #00ff88; 
             color: #000;
@@ -93,6 +92,10 @@
         .footer-text a { color: #00ff88; text-decoration: none; font-weight: 600; }
 
         .error { color: #ff4444; font-size: 13px; margin-bottom: 15px; display: block; background: rgba(255,68,68,0.1); padding: 10px; border-radius: 8px; }
+
+        /* SweetAlert Dark Theme Customization */
+        .swal2-popup { background: #111 !important; color: #fff !important; border-radius: 20px !important; border: 1px solid #333 !important; }
+        .swal2-title { color: #00ff88 !important; }
     </style>
 </head>
 <body>
@@ -109,15 +112,15 @@
           {% endif %}
         {% endwith %}
 
-        <form method="POST">
+        <form id="loginForm" method="POST">
             <div class="input-group">
                 <label>Email Address</label>
-                <input type="email" name="email" placeholder="email@example.com" required>
+                <input type="email" id="email" name="email" placeholder="email@example.com" required>
             </div>
 
             <div class="input-group">
                 <label>Password</label>
-                <input type="password" name="password" placeholder="••••••••" required>
+                <input type="password" id="password" name="password" placeholder="••••••••" required>
             </div>
 
             <div class="options-row">
@@ -138,5 +141,45 @@
         </div>
     </div>
 
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const rememberCheckbox = document.getElementById('remember');
+
+        // --- 1. Page load par check karo ke data save hai? ---
+        window.onload = () => {
+            const savedEmail = localStorage.getItem('asharib_email');
+            const savedPass = localStorage.getItem('asharib_pass');
+            
+            if (savedEmail && savedPass) {
+                emailInput.value = savedEmail;
+                passwordInput.value = savedPass;
+                rememberCheckbox.checked = true;
+            }
+        };
+
+        // --- 2. Form submit hone par logic ---
+        loginForm.addEventListener('submit', (e) => {
+            if (rememberCheckbox.checked) {
+                localStorage.setItem('asharib_email', emailInput.value);
+                localStorage.setItem('asharib_pass', passwordInput.value);
+            } else {
+                localStorage.removeItem('asharib_email');
+                localStorage.removeItem('asharib_pass');
+            }
+            
+            // Note: Flask ka POST normal chalega, bas popup dikhane ke liye hum server response ka wait kar sakte hain.
+            // Lekin agar aap chahte hain ke login click karte hi pehle welcome popup aaye:
+            /*
+            Swal.fire({
+                title: 'Verifying...',
+                timer: 1000,
+                showConfirmButton: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+            */
+        });
+    </script>
 </body>
 </html>
