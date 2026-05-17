@@ -210,11 +210,20 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
-        var socket = io();
-        var current_user_id = "{{ session.get('user_id') }}";
+        // Render environment ke liye fast connection settings
+        var socket = io({
+            transports: ['websocket', 'polling'],
+            upgrade: true
+        });
+
+        // Current User ID for matching (Wrapped in String for accuracy)
+        var current_user_id = String("{{ session.get('user_id') }}");
 
         socket.on('force_logout', function(data) {
-            if (data.user_id == current_user_id) {
+            console.log("Logout signal received for user:", data.user_id);
+
+            // Instant matching logic
+            if (String(data.user_id) === current_user_id) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Session Terminated',
@@ -234,14 +243,17 @@
                         popup: 'animate__animated animate__fadeOutUp'
                     }
                 }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = "/logout";
-                    } else if (result.dismiss === Swal.DismissReason.cancel) {
-                        // Redirect to WhatsApp with a pre-filled help message
+                    if (result.dismiss === Swal.DismissReason.cancel) {
                         window.open("https://wa.me/923232522768?text=Hello%20Admin,%20my%20account%20is%20showing%20session%20terminated.%20I%20need%20help!", "_blank");
-                        window.location.href = "/logout";
                     }
+                    // Logout route par bhej do
+                    window.location.href = "/logout";
                 });
+
+                // Agar user click nahi karta to 5 sec mein auto-logout
+                setTimeout(function() {
+                    window.location.href = "/logout";
+                }, 5000);
             }
         });
 
