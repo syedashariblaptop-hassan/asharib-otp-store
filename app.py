@@ -33,8 +33,12 @@ class Product(db.Model):
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
 
+# Vercel par table creation ko route ke bahar handle karna behtar hai
 with app.app_context():
-    db.create_all() 
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f"Database error: {e}")
 
 # --- Routes ---
 
@@ -184,5 +188,6 @@ def logout():
     session.clear()
     return redirect(url_for('user_auth'))
 
+# Vercel ko batane ke liye ke entry point yehi hai
 if __name__ == "__main__":
     app.run()
