@@ -21,6 +21,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     is_blocked = db.Column(db.Boolean, default=False)
+    balance = db.Column(db.Float, default=0.0)  # Naya Balance Column
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,7 +34,7 @@ class Product(db.Model):
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
 
-# Vercel par table creation ko route ke bahar handle karna behtar hai
+# Database tables create karne ke liye
 with app.app_context():
     try:
         db.create_all()
@@ -58,7 +59,8 @@ def home():
     else:
         all_products = Product.query.all()
     
-    return render_template('store.html', products=all_products, search_query=search_query)
+    # User object bhi bhej rahe hain taake balance nazar aaye
+    return render_template('store.html', products=all_products, search_query=search_query, user=user)
 
 @app.route('/auth', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
@@ -94,7 +96,7 @@ def register():
             flash("User already exists with this email!")
             return redirect(url_for('register'))
 
-        new_user = User(username=username, password=password)
+        new_user = User(username=username, password=password, balance=0.0)
         db.session.add(new_user)
         db.session.commit()
         
@@ -104,6 +106,8 @@ def register():
         </script>'''
 
     return render_template('register.html')
+
+# --- ADMIN ROUTES ---
 
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
@@ -139,6 +143,17 @@ def admin():
     all_p = Product.query.all()
     all_u = User.query.all()
     return render_template('admin.html', products=all_p, users=all_u)
+
+# --- NAYA ROUTE: User ka balance update karne ke liye ---
+@app.route('/admin/update_balance/<int:user_id>/<float:amount>')
+def update_balance(user_id, amount):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    user = User.query.get(user_id)
+    if user:
+        user.balance += amount  # Balance barhane ke liye
+        db.session.commit()
+        flash(f"Balance updated for {user.username}")
+    return redirect(url_for('admin'))
 
 @app.route('/admin/delete_user/<int:user_id>')
 def delete_user(user_id):
@@ -188,6 +203,5 @@ def logout():
     session.clear()
     return redirect(url_for('user_auth'))
 
-# Vercel ko batane ke liye ke entry point yehi hai
 if __name__ == "__main__":
     app.run()
