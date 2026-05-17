@@ -6,19 +6,20 @@ app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
 
 # --- DATABASE CONFIGURATION ---
-# Vercel par file likhne ke liye /tmp folder ka istemal zarori hai
-if os.environ.get('VERCEL'):
-    db_path = '/tmp/database.db'
+# Neon ya Vercel Postgres ki URL check karein
+db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+
+if db_url:
+    # Postgres compatibility fix (Vercel ke liye zarori hai)
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
+    # Local laptop ke liye purana SQLite rasta
     basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, 'database.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 
-# Agar DATABASE_URL (Postgres) available ho to wo use karein, warna SQLite
-db_url = os.environ.get('DATABASE_URL')
-if db_url and db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///' + db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
