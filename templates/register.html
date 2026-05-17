@@ -5,27 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account | Asharib Tech Store</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* Yahan wahi saara CSS hai jo maine auth.html ke liye diya tha */
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000000; }
-        .login-card { background: #111111; padding: 40px 30px; border-radius: 25px; border: 1px solid #222; width: 90%; max-width: 400px; text-align: center; }
+        .login-card { background: #111111; padding: 40px 30px; border-radius: 25px; border: 1px solid #222; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0, 255, 136, 0.05); }
         h2 { color: #ffffff; margin-bottom: 10px; font-size: 26px; }
         p { color: #888; margin-bottom: 30px; font-size: 14px; }
         .input-group { text-align: left; margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; color: #00ff88; font-weight: 600; font-size: 13px; }
-        input { width: 100%; padding: 14px 15px; border: 1px solid #333; border-radius: 12px; background: #1a1a1a; color: white; outline: none; }
-        input:focus { border-color: #00ff88; }
-        .login-btn { background: #00ff88; color: #000; border: none; width: 100%; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; text-transform: uppercase; }
+        input { width: 100%; padding: 14px 15px; border: 1px solid #333; border-radius: 12px; background: #1a1a1a; color: white; outline: none; transition: 0.3s; }
+        input:focus { border-color: #00ff88; box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); }
+        .login-btn { background: #00ff88; color: #000; border: none; width: 100%; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .login-btn:hover { background: #00cc6e; transform: translateY(-2px); }
         .footer-text { font-size: 14px; color: #888; margin-top: 20px; }
         .footer-text a { color: #00ff88; text-decoration: none; font-weight: 600; }
+        
+        /* Customizing SweetAlert for Dark Theme */
+        .swal2-popup { background: #111 !important; color: #fff !important; border-radius: 20px !important; border: 1px solid #333 !important; }
+        .swal2-title { color: #00ff88 !important; }
     </style>
 </head>
 <body>
     <div class="login-card">
         <h2>Create Account</h2>
         <p>Join Asharib Tech Store today</p>
-        <form method="POST">
+        
+        <form id="registerForm">
             <div class="input-group">
                 <label>Full Name</label>
                 <input type="text" name="username" placeholder="Your Name" required>
@@ -40,9 +46,49 @@
             </div>
             <button type="submit" class="login-btn">Sign Up</button>
         </form>
+
         <div class="footer-text">
             Already have an account? <a href="/login">Login here</a>
         </div>
     </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    Swal.fire({
+                        title: 'Congratulations!',
+                        text: 'Your account has been created successfully.',
+                        icon: 'success',
+                        background: '#111',
+                        color: '#fff',
+                        confirmButtonColor: '#00ff88',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = '/login';
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Something went wrong. Please try again.',
+                        icon: 'error',
+                        confirmButtonColor: '#00ff88'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
 </body>
 </html>
