@@ -21,3 +21,4 @@ python-dotenv==1.0.1
 wsgi==0.0.3
 Flask
 Flask-SQLAlchemy
+SQLAlchemy
