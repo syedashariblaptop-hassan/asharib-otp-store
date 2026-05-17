@@ -7,7 +7,7 @@ app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
 
 # --- SOCKET IO CONFIGURATION ---
-# 'eventlet' ya 'gevent' deployment ke liye behtar hote hain
+# Humne broadcast allow kiya hai taake signal har jagah jaye
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # --- DATABASE CONFIGURATION ---
@@ -48,7 +48,6 @@ def home():
     if not session.get('user_id'): 
         return redirect(url_for('user_auth'))
     
-    # Real-time check: Agar user block ho chuka hai to home page se nikaal do
     user = User.query.get(session['user_id'])
     if not user or user.is_blocked:
         session.clear()
@@ -145,15 +144,17 @@ def admin():
     all_u = User.query.all()
     return render_template('admin.html', products=all_p, users=all_u)
 
-# --- REAL-TIME ACTIONS (FORCE LOGOUT) ---
+# --- REAL-TIME ACTIONS (FORCED UPDATES) ---
 
 @app.route('/admin/delete_user/<int:user_id>')
 def delete_user(user_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
-        # Signal bhejna: User ko foran logout karo
-        socketio.emit('force_logout', {'user_id': user_id})
+        # Step 1: Foran signal bhejo (DB se delete karne se PEHLE)
+        socketio.emit('force_logout', {'user_id': str(user_id)}, namespace='/')
+        
+        # Step 2: DB se udhao
         db.session.delete(user)
         db.session.commit()
     return redirect(url_for('admin'))
@@ -166,9 +167,11 @@ def toggle_block(user_id):
     if user:
         user.is_blocked = not user.is_blocked
         db.session.commit()
-        # Agar block kiya hai to logout signal bhejo
+        
+        # Agar block ho gaya hai, to usey dhakke maar kar nikalo
         if user.is_blocked:
-            socketio.emit('force_logout', {'user_id': user_id})
+            socketio.emit('force_logout', {'user_id': str(user_id)}, namespace='/')
+            
     return redirect(url_for('admin'))
 
 # --- Other Product Routes ---
@@ -203,5 +206,6 @@ def logout():
     return redirect(url_for('user_auth'))
 
 if __name__ == "__main__":
-    # Render ke liye socketio.run use karna zaroori hai
-    socketio.run(app, host='0.0.0.0', port=10000)
+    # Host aur Port ko environment variables se uthana behtar hota hai
+    port = int(os.environ.get("PORT", 10000))
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
