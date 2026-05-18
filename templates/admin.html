@@ -15,44 +15,68 @@
         /* Stats Section */
         .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #222; text-align: center; position: relative; overflow: hidden; }
-        .stat-card::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: #00ff88; }
         .stat-card i { color: #00ff88; font-size: 24px; margin-bottom: 10px; }
         .stat-card h3 { margin: 5px 0; font-size: 24px; font-weight: 800; }
         .stat-card p { margin: 0; font-size: 12px; color: #888; text-transform: uppercase; }
+
+        /* NEW: Deposit Management Card */
+        .deposit-management-box {
+            background: linear-gradient(145deg, #1a1a1a, #111);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #00ff8833;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0,255,136,0.05);
+        }
+        .deposit-btn {
+            background: #00ff88;
+            color: black;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+        .deposit-btn:hover { background: white; transform: scale(1.05); }
+        .pending-badge {
+            background: #ff4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 50px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
         
         /* Box Styling */
         .box { background: #111; padding: 25px; border-radius: 20px; border: 1px solid #222; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 35px; }
         h2 { color: #00ff88; margin-top: 0; font-size: 18px; display: flex; align-items: center; gap: 10px; }
         
-        input, textarea { width: 100%; padding: 14px; margin: 10px 0; background: #050505; color: #fff; border: 1px solid #333; border-radius: 10px; outline: none; transition: 0.3s; }
-        input:focus { border-color: #00ff88; box-shadow: 0 0 10px rgba(0, 255, 136, 0.1); }
+        input, textarea { width: 100%; padding: 14px; margin: 10px 0; background: #050505; color: #fff; border: 1px solid #333; border-radius: 10px; outline: none; }
         
         .price-row { display: flex; gap: 10px; }
         .btn-upload { width: 100%; padding: 16px; background: #00ff88; color: black; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; transition: 0.3s; font-size: 14px; text-transform: uppercase; margin-top: 10px; }
-        .btn-upload:hover { background: #fff; transform: translateY(-2px); }
 
         /* User Table */
         .section-title { color: #00ff88; border-left: 4px solid #00ff88; padding-left: 15px; margin: 40px 0 20px 0; font-size: 20px; font-weight: 700; }
         .table-responsive { width: 100%; overflow-x: auto; background: #111; border-radius: 15px; border: 1px solid #222; }
         .user-table { width: 100%; border-collapse: collapse; min-width: 700px; }
         .user-table th { background: #1a1a1a; color: #00ff88; padding: 15px; text-align: left; font-size: 12px; text-transform: uppercase; }
-        .user-table td { padding: 15px; border-bottom: 1px solid #222; font-size: 14px; vertical-align: middle; }
+        .user-table td { padding: 15px; border-bottom: 1px solid #222; font-size: 14px; }
         
         .balance-badge { background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 5px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(0, 255, 136, 0.2); }
-        .edit-balance { color: #aaa; cursor: pointer; margin-left: 5px; transition: 0.2s; }
-        .edit-balance:hover { color: #fff; }
 
-        /* Action Buttons */
-        .block-btn { padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; transition: 0.3s; }
-        .remove-user-btn { padding: 8px 12px; border-radius: 8px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; font-weight: bold; margin-left: 5px; transition: 0.3s; }
-        .block-btn:hover, .remove-user-btn:hover { opacity: 0.8; transform: scale(1.05); }
+        .block-btn { padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; }
+        .remove-user-btn { padding: 8px 12px; border-radius: 8px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; }
 
-        /* Manage Products */
-        .item-card { background: #111; padding: 15px 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #222; transition: 0.3s; }
-        .item-card:hover { border-color: #00ff88; background: #161616; }
-        .item-card strong { font-size: 15px; color: #fff; }
-
-        .swal2-popup { background: #111 !important; color: #fff !important; border-radius: 20px !important; border: 1px solid #333 !important; }
+        .item-card { background: #111; padding: 15px 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #222; }
+        .swal2-popup { background: #111 !important; color: #fff !important; border-radius: 20px !important; }
     </style>
 </head>
 <body>
@@ -76,6 +100,20 @@
             <h3>{{ products|length }}</h3>
             <p>Services</p>
         </div>
+    </div>
+
+    <div class="deposit-management-box">
+        <div>
+            <h3 style="margin: 0; font-size: 16px;">Deposit Requests</h3>
+            <p style="margin: 5px 0 0 0; font-size: 11px; color: #888;">Verify payment screenshots and approve balance.</p>
+        </div>
+        <a href="/admin/deposits" class="deposit-btn">
+            <i class="fas fa-receipt"></i> VIEW REQUESTS
+            {% set pending_count = requests|selectattr('status', 'equalto', 'Pending')|list|length %}
+            {% if pending_count > 0 %}
+                <span class="pending-badge">{{ pending_count }}</span>
+            {% endif %}
+        </a>
     </div>
 
     <div class="box">
@@ -113,7 +151,7 @@
                     </td>
                     <td>
                         <span class="balance-badge">Rs. {{ u.balance if u.balance else '0' }}</span>
-                        <i class="fas fa-edit edit-balance" title="Update Balance" onclick="updateBalance('{{ u.id }}', '{{ u.username }}')"></i>
+                        <i class="fas fa-edit edit-balance" style="color:#555; cursor:pointer; margin-left:5px;" onclick="updateBalance('{{ u.id }}', '{{ u.username }}')"></i>
                     </td>
                     <td>
                         {% if u.is_blocked %}
@@ -168,11 +206,7 @@
             color: '#fff',
             confirmButtonColor: '#00ff88'
         });
-
-        if (amount) {
-            // Yahan hum API call karenge balance update ke liye
-            window.location.href = `/admin/update_balance/${userId}/${amount}`;
-        }
+        if (amount) { window.location.href = `/admin/update_balance/${userId}/${amount}`; }
     }
 </script>
 
