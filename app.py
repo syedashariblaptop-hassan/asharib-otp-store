@@ -213,3 +213,10 @@ def delete_user(user_id):
         db.session.delete(user)
         db.session.commit()
     return redirect('/admin')
+@app.route('/admin/update_balance/<int:user_id>/<float:amount>')
+def update_balance(user_id, amount):
+    user = User.query.get(user_id)
+    if user:
+        user.balance = amount
+        db.session.commit()
+    return redirect('/admin')
