@@ -55,7 +55,8 @@ class Deposit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    proof_url = db.Column(db.Text, nullable=False)
+    # FIX: Is line ko db.Text rakha hai taake 500 chars ka error na aaye
+    proof_url = db.Column(db.Text, nullable=False) 
     status = db.Column(db.String(20), default="Pending")
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -64,7 +65,7 @@ with app.app_context():
         db.create_all()
         print("Database synchronized!")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error syncing DB: {e}")
 
 # --- Routes ---
 
@@ -93,16 +94,11 @@ def deposit():
             file = request.files.get('screenshot')
             
             if not amount or not file:
-                return jsonify({"status": "error", "message": "Amount and Screenshot are required!"}), 400
+                return jsonify({"status": "error", "message": "All fields are required!"}), 400
                 
-            # File reading and encoding
             img_stream = file.read()
-            if not img_stream:
-                return jsonify({"status": "error", "message": "Empty file uploaded!"}), 400
-                
             img_base64 = base64.b64encode(img_stream).decode('utf-8')
             
-            # Database Entry
             new_dep = Deposit(
                 user_id=user.id, 
                 amount=float(amount), 
@@ -112,20 +108,17 @@ def deposit():
             db.session.add(new_dep)
             db.session.commit()
             
-            return jsonify({"status": "success", "message": "Deposit request submitted successfully!"})
+            return jsonify({"status": "success", "message": "Request submitted!"})
             
         except Exception as e:
             db.session.rollback()
-            print(f"DEBUG ERROR: {str(e)}") # Terminal check ke liye
-            return jsonify({"status": "error", "message": f"Server Error: {str(e)}"}), 500
+            return jsonify({"status": "error", "message": str(e)}), 500
         
     return render_template('deposit.html', user=user)
 
-# --- ADMIN DEPOSIT MANAGEMENT ---
 @app.route('/admin/deposits')
 def admin_deposits():
     if not session.get('admin'): return redirect(url_for('admin_login'))
-    # Ab hum saari requests dikhayenge, latest wali upar
     all_requests = Deposit.query.order_by(Deposit.timestamp.desc()).all()
     return render_template('admin_deposits.html', requests=all_requests)
 
@@ -136,13 +129,11 @@ def approve_deposit(id):
         dep = Deposit.query.get(id)
         if dep and dep.status == "Pending":
             user = User.query.get(dep.user_id)
-            if user:
-                # Balance Update logic
-                user.balance = float(user.balance or 0) + float(dep.amount)
-                dep.status = "Approved"
-                db.session.commit()
-                return jsonify({"status": "success"})
-        return jsonify({"status": "error", "message": "Request not found or already processed"}), 400
+            user.balance = float(user.balance or 0) + float(dep.amount)
+            dep.status = "Approved"
+            db.session.commit()
+            return jsonify({"status": "success"})
+        return jsonify({"status": "error"}), 400
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -152,33 +143,29 @@ def reject_deposit(id):
     if not session.get('admin'): return jsonify({"status": "unauthorized"}), 401
     try:
         dep = Deposit.query.get(id)
-        if dep and dep.status == "Pending":
+        if dep:
             dep.status = "Rejected"
             db.session.commit()
             return jsonify({"status": "success"})
-        return jsonify({"status": "error", "message": "Request not found"}), 400
+        return jsonify({"status": "error"}), 400
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# --- AUTH ROUTES ---
 @app.route('/auth', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def user_auth():
     if request.method == 'POST':
         login_email = request.form.get('email')
         login_password = request.form.get('password')
-        try:
-            user = User.query.filter_by(username=login_email).first()
-            if user and user.password == login_password:
-                if user.is_blocked:
-                    flash("Your account is suspended.")
-                    return redirect(url_for('user_auth'))
-                session['user_id'] = user.id
-                return redirect(url_for('home'))
-            flash("Invalid email or password!")
-        except Exception as e:
-            flash("Server error.")
+        user = User.query.filter_by(username=login_email).first()
+        if user and user.password == login_password:
+            if user.is_blocked:
+                flash("Account suspended.")
+                return redirect(url_for('user_auth'))
+            session['user_id'] = user.id
+            return redirect(url_for('home'))
+        flash("Invalid login!")
         return redirect(url_for('user_auth'))
     return render_template('auth.html')
 
@@ -187,102 +174,28 @@ def register():
     if request.method == 'POST':
         reg_email = request.form.get('email')
         reg_password = request.form.get('password')
-        if not reg_email or not reg_password:
-            flash("All fields required!")
+        if User.query.filter_by(username=reg_email).first():
+            flash("User exists!")
             return redirect(url_for('register'))
-        try:
-            if User.query.filter_by(username=reg_email).first():
-                flash("User already exists!")
-                return redirect(url_for('register'))
-            new_user = User(username=reg_email, password=reg_password, balance=0.0)
-            db.session.add(new_user)
-            db.session.commit()
-            return f'<script>alert("Account Created! Now Login."); window.location.href = "{url_for("user_auth")}";</script>'
-        except Exception as e:
-            db.session.rollback()
-            flash("Error during registration.")
-        return redirect(url_for('register'))
+        new_user = User(username=reg_email, password=reg_password, balance=0.0)
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('user_auth'))
     return render_template('register.html')
 
-# --- ADMIN ROUTES ---
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
-        password = request.form.get('pass')
-        if password == 'asharib123':
+        if request.form.get('pass') == 'asharib123':
             session['admin'] = True
             return redirect(url_for('admin'))
-        flash("Wrong Admin Password!")
+        flash("Wrong password!")
     return render_template('admin_login.html')
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if not session.get('admin'): return redirect(url_for('admin_login'))
-    if request.method == 'POST':
-        try:
-            new_p = Product(
-                name=request.form['name'], old_price=request.form['old_price'], 
-                price=request.form['price'], stock=request.form['stock'], 
-                desc=request.form['desc'], pic=request.form['pic']
-            )
-            db.session.add(new_p)
-            db.session.commit()
-            return redirect(url_for('admin'))
-        except:
-            db.session.rollback()
-            flash("Error adding product.")
     return render_template('admin.html', products=Product.query.all(), users=User.query.all())
-
-@app.route('/admin/update_balance/<int:user_id>/<float:amount>')
-def update_balance(user_id, amount):
-    if not session.get('admin'): return redirect(url_for('admin_login'))
-    user = User.query.get(user_id)
-    if user:
-        user.balance = float(user.balance or 0) + amount
-        db.session.commit()
-    return redirect(url_for('admin'))
-
-@app.route('/admin/delete_user/<int:user_id>')
-def delete_user(user_id):
-    if not session.get('admin'): return redirect(url_for('admin_login'))
-    user = User.query.get(user_id)
-    if user:
-        db.session.delete(user)
-        db.session.commit()
-    return redirect(url_for('admin'))
-
-@app.route('/admin/toggle_block/<int:user_id>')
-def toggle_block(user_id):
-    if not session.get('admin'): return redirect(url_for('admin_login'))
-    user = User.query.get(user_id)
-    if user:
-        user.is_blocked = not user.is_blocked
-        db.session.commit()
-    return redirect(url_for('admin'))
-
-@app.route('/admin/edit_product/<int:id>', methods=['GET', 'POST'])
-def edit_product(id):
-    if not session.get('admin'): return redirect(url_for('admin_login'))
-    p = Product.query.get(id)
-    if request.method == 'POST':
-        p.name = request.form['name']
-        p.old_price = request.form['old_price']
-        p.price = request.form['price']
-        p.stock = request.form['stock']
-        p.desc = request.form['desc']
-        p.pic = request.form['pic']
-        db.session.commit()
-        return redirect(url_for('admin'))
-    return render_template('edit_product.html', p=p)
-
-@app.route('/delete/<int:id>')
-def delete(id):
-    if not session.get('admin'): return redirect(url_for('admin_login'))
-    p = Product.query.get(id)
-    if p: 
-        db.session.delete(p)
-        db.session.commit()
-    return redirect(url_for('admin'))
 
 @app.route('/logout')
 def logout():
