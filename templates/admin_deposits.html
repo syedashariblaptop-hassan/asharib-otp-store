@@ -1,0 +1,20 @@
+<h2>Pending Deposit Requests</h2>
+<table border="1">
+    <tr>
+        <th>User</th>
+        <th>Amount</th>
+        <th>Proof</th>
+        <th>Action</th>
+    </tr>
+    {% for req in requests %}
+    <tr>
+        <td>{{ req.user.username }}</td>
+        <td>{{ req.amount }}</td>
+        <td><a href="{{ req.proof_url }}" target="_blank">View Screenshot</a></td>
+        <td>
+            <a href="{{ url_for('approve_deposit', id=req.id) }}">Approve</a> | 
+            <a href="{{ url_for('reject_deposit', id=req.id) }}">Reject</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
