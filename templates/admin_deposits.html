@@ -59,6 +59,7 @@
             </thead>
             <tbody id="requestTable">
                 {% for req in requests %}
+                {% if req.status == 'Pending' %}
                 <tr id="row-{{ req.id }}">
                     <td>
                         <span style="font-weight: 600;">{{ req.user.username }}</span><br>
@@ -82,13 +83,7 @@
                         </div>
                     </td>
                 </tr>
-                {% else %}
-                <tr id="no-data">
-                    <td colspan="5" style="text-align: center; padding: 50px; color: #444;">
-                        <i class="fas fa-inbox" style="font-size: 30px; margin-bottom: 10px; display: block;"></i>
-                        No pending deposit requests found.
-                    </td>
-                </tr>
+                {% endif %}
                 {% endfor %}
             </tbody>
         </table>
@@ -126,7 +121,6 @@
 
             if (confirm.isConfirmed) {
                 try {
-                    // Humne routes app.py mein pehle hi set kiye hain
                     const response = await fetch(`/admin/${action}_deposit/${id}`);
                     const data = await response.json();
 
@@ -149,7 +143,7 @@
                             color: '#fff'
                         });
                     } else {
-                        Swal.fire('Failed', 'Something went wrong on the server.', 'error');
+                        Swal.fire('Failed', data.message || 'Error processing request', 'error');
                     }
                 } catch (err) {
                     Swal.fire('Error', 'Connection to server lost!', 'error');
@@ -159,18 +153,19 @@
 
         function checkEmpty() {
             const tbody = document.getElementById('requestTable');
-            // Agar sirf "No pending requests" wali row bachi ho ya kuch bhi na ho
-            if (tbody.querySelectorAll('tr:not(#no-data)').length === 0) {
-                tbody.innerHTML = `<tr id="no-data"><td colspan="5" style="text-align: center; padding: 50px; color: #444;">
+            if (tbody.children.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 50px; color: #444;">
                     <i class="fas fa-check-circle" style="font-size: 30px; color: #00ff88; margin-bottom: 10px; display: block;"></i>
                     All caught up! No pending requests.</td></tr>`;
             }
         }
 
-        // Close modal on ESC key
         document.addEventListener('keydown', (e) => {
             if (e.key === "Escape") closeModal();
         });
+
+        // Initial check if table is empty
+        window.onload = checkEmpty;
     </script>
 
 </body>
