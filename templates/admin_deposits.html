@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin | Deposit Requests</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background: #000; color: white; font-family: 'Poppins', sans-serif; padding: 20px; }
         h2 { color: #00ff88; text-align: center; }
@@ -14,20 +15,23 @@
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
         th { background: #00ff88; color: black; text-transform: uppercase; font-size: 12px; }
         
-        .btn { padding: 8px 15px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.3s; }
+        .btn { padding: 8px 15px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.3s; border: none; cursor: pointer; }
         .btn-approve { background: #00ff88; color: black; }
         .btn-reject { background: #ff4444; color: white; }
-        .btn-view { background: #333; color: white; cursor: pointer; border: none; }
+        .btn-view { background: #333; color: white; }
         
         .btn:hover { opacity: 0.8; transform: scale(1.05); }
 
         /* Screenshot Modal */
         #imgModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
-        #imgModal img { max-width: 90%; max-height: 80%; border-radius: 10px; border: 2px solid #00ff88; }
+        #imgModal img { max-width: 90%; max-height: 80%; border-radius: 10px; border: 2px solid #00ff88; box-shadow: 0 0 20px rgba(0,255,136,0.3); }
         .close-modal { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
 
         .badge { padding: 4px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; }
         .badge-pending { background: #ffaa0033; color: #ffaa00; border: 1px solid #ffaa00; }
+        
+        /* Smooth Fade Animation */
+        .fade-out { opacity: 0; transform: translateX(20px); transition: 0.5s; }
     </style>
 </head>
 <body>
@@ -46,20 +50,20 @@
                     <th>Action</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="requestTable">
                 {% for req in requests %}
-                <tr>
+                <tr id="row-{{ req.id }}">
                     <td>{{ req.user.username }}</td>
                     <td><b>Rs. {{ req.amount }}</b></td>
                     <td>
-                        <button class="btn btn-view" onclick="showImage('data:image/png;base64,{{ req.proof_url }}')">
+                        <button class="btn btn-view" onclick="showImage('{{ req.proof_url if 'http' in req.proof_url else 'data:image/png;base64,' + req.proof_url }}')">
                             <i class="fas fa-image"></i> View
                         </button>
                     </td>
                     <td><span class="badge badge-pending">{{ req.status }}</span></td>
                     <td>
-                        <a href="{{ url_for('approve_deposit', id=req.id) }}" class="btn btn-approve">Approve</a>
-                        <a href="{{ url_for('reject_deposit', id=req.id) }}" class="btn btn-reject" onclick="return confirm('Reject this request?')">Reject</a>
+                        <button class="btn btn-approve" onclick="processAction('{{ req.id }}', 'approve')">Approve</button>
+                        <button class="btn btn-reject" style="margin-left:5px;" onclick="processAction('{{ req.id }}', 'reject')">Reject</button>
                     </td>
                 </tr>
                 {% else %}
@@ -78,13 +82,68 @@
 
     <script>
         function showImage(src) {
-            document.getElementById('modalImg').src = src;
-            document.getElementById('imgModal').style.display = 'flex';
+            const modal = document.getElementById('imgModal');
+            const img = document.getElementById('modalImg');
+            img.src = src;
+            modal.style.display = 'flex';
         }
+
         function closeModal() {
             document.getElementById('imgModal').style.display = 'none';
         }
-        // Close modal on click outside image
+
+        // Action process karne ka professional tarika (Refresh ke baghair)
+        async function processAction(id, action) {
+            // SweetAlert Confirm
+            const confirm = await Swal.fire({
+                title: 'Are you sure?',
+                text: `Do you want to ${action} this deposit?`,
+                icon: 'question',
+                showCancelButton: true,
+                background: '#111',
+                color: '#fff',
+                confirmButtonColor: action === 'approve' ? '#00ff88' : '#ff4444',
+                confirmButtonText: `Yes, ${action}!`
+            });
+
+            if (confirm.isConfirmed) {
+                // Background mein backend ko call bhejna
+                try {
+                    const response = await fetch(`/admin/${action}_deposit/${id}`);
+                    if (response.ok) {
+                        // Row ko gayab karna
+                        const row = document.getElementById(`row-${id}`);
+                        row.classList.add('fade-out');
+                        setTimeout(() => {
+                            row.remove();
+                            checkEmpty();
+                        }, 500);
+
+                        Swal.fire({
+                            title: 'Success!',
+                            text: `Request ${action}d successfully.`,
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false,
+                            background: '#111',
+                            color: '#fff'
+                        });
+                    } else {
+                        Swal.fire('Error', 'Failed to update database', 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Error', 'Connection failed!', 'error');
+                }
+            }
+        }
+
+        function checkEmpty() {
+            const tbody = document.getElementById('requestTable');
+            if (tbody.children.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #555;">No pending requests found.</td></tr>';
+            }
+        }
+
         window.onclick = function(event) {
             if (event.target == document.getElementById('imgModal')) {
                 closeModal();
