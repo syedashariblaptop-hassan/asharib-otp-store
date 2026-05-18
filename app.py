@@ -10,9 +10,16 @@ app.secret_key = "asharib_tech_official_key"
 db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
 
 if db_url:
-    # Postgres compatibility fix (Vercel ke liye zarori hai)
+    # 1. Postgres compatibility fix (postgres:// ko postgresql:// mein badalna)
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    # 2. SSL Mode Fix (Neon ke liye require hai warna Error 500 aata hai)
+    if "?" not in db_url:
+        db_url += "?sslmode=require"
+    elif "sslmode=" not in db_url:
+        db_url += "&sslmode=require"
+        
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
     # Local laptop ke liye purana SQLite rasta
@@ -43,12 +50,12 @@ class Product(db.Model):
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
 
-# Database tables creation
+# Database tables creation (Neon par table banane ke liye)
 with app.app_context():
     try:
         db.create_all()
     except Exception as e:
-        print(f"Database error: {e}")
+        print(f"Database creation error: {e}")
 
 # --- Routes ---
 
@@ -105,13 +112,17 @@ def register():
             return redirect(url_for('register'))
 
         new_user = User(username=username, password=password, balance=0.0)
-        db.session.add(new_user)
-        db.session.commit()
-        
-        return f'''<script>
-            alert("Account Created! Now Login.");
-            window.location.href = "{url_for('user_auth')}";
-        </script>'''
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            return f'''<script>
+                alert("Account Created! Now Login.");
+                window.location.href = "{url_for('user_auth')}";
+            </script>'''
+        except Exception as e:
+            db.session.rollback()
+            flash("Database Error: Could not register.")
+            return redirect(url_for('register'))
 
     return render_template('register.html')
 
