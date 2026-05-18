@@ -19,7 +19,7 @@
         .stat-card h3 { margin: 5px 0; font-size: 24px; font-weight: 800; }
         .stat-card p { margin: 0; font-size: 12px; color: #888; text-transform: uppercase; }
 
-        /* NEW: Deposit Management Card */
+        /* Deposit Management Card */
         .deposit-management-box {
             background: linear-gradient(145deg, #1a1a1a, #111);
             padding: 20px;
@@ -31,6 +31,14 @@
             align-items: center;
             box-shadow: 0 0 20px rgba(0,255,136,0.05);
         }
+
+        /* NEW: Red Dot Glow Animation */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+        }
+
         .deposit-btn {
             background: #00ff88;
             color: black;
@@ -43,15 +51,27 @@
             align-items: center;
             gap: 8px;
             transition: 0.3s;
+            position: relative;
         }
+        
+        /* Jab pending ho toh button thoda glow karega */
+        .btn-glow {
+            border: 2px solid #ff4444 !important;
+            animation: pulse-red 2s infinite;
+        }
+
         .deposit-btn:hover { background: white; transform: scale(1.05); }
+
+        /* Red Dot / Badge Style */
         .pending-badge {
             background: #ff4444;
             color: white;
-            padding: 2px 8px;
+            padding: 4px 10px;
             border-radius: 50px;
-            font-size: 10px;
+            font-size: 11px;
+            font-weight: 900;
             margin-left: 5px;
+            border: 2px solid #111;
         }
         
         /* Box Styling */
@@ -107,11 +127,11 @@
             <h3 style="margin: 0; font-size: 16px;">Deposit Requests</h3>
             <p style="margin: 5px 0 0 0; font-size: 11px; color: #888;">Verify payment screenshots and approve balance.</p>
         </div>
-        <a href="/admin/deposits" class="deposit-btn">
+        
+        <a href="/admin/deposits" class="deposit-btn {% if pending_exists %}btn-glow{% endif %}">
             <i class="fas fa-receipt"></i> VIEW REQUESTS
-            {% set pending_count = requests|selectattr('status', 'equalto', 'Pending')|list|length %}
-            {% if pending_count > 0 %}
-                <span class="pending-badge">{{ pending_count }}</span>
+            {% if pending_exists %}
+                <span class="pending-badge">NEW</span>
             {% endif %}
         </a>
     </div>
@@ -147,7 +167,6 @@
                 <tr>
                     <td>
                         <div style="font-weight: bold;">{{ u.username }}</div>
-                        <div style="font-size: 11px; color: #555;">{{ u.email }}</div>
                     </td>
                     <td>
                         <span class="balance-badge">Rs. {{ u.balance if u.balance else '0' }}</span>
@@ -163,9 +182,6 @@
                     <td>
                         <a href="/admin/toggle_block/{{ u.id }}" class="block-btn" style="background: {{ 'linear-gradient(90deg, #f39c12, #e67e22)' if u.is_blocked else 'linear-gradient(90deg, #e74c3c, #c0392b)' }};">
                             {{ 'UNBLOCK' if u.is_blocked else 'BLOCK USER' }}
-                        </a>
-                        <a href="/admin/delete_user/{{ u.id }}" class="remove-user-btn" onclick="return confirm('Account permanently delete krna ha?')">
-                            <i class="fas fa-trash"></i>
                         </a>
                     </td>
                 </tr>
@@ -199,8 +215,7 @@
         const { value: amount } = await Swal.fire({
             title: `Update Balance for ${username}`,
             input: 'number',
-            inputLabel: 'Enter amount to add or subtract',
-            inputPlaceholder: 'e.g. 500',
+            inputLabel: 'Enter amount',
             showCancelButton: true,
             background: '#111',
             color: '#fff',
@@ -209,6 +224,5 @@
         if (amount) { window.location.href = `/admin/update_balance/${userId}/${amount}`; }
     }
 </script>
-
 </body>
 </html>
