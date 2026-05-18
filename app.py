@@ -6,15 +6,12 @@ app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
 
 # --- DATABASE CONFIGURATION ---
-# Neon ya Vercel Postgres ki URL check karein
 db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
 
 if db_url:
-    # 1. Postgres compatibility fix (postgres:// ko postgresql:// mein badalna)
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     
-    # 2. SSL Mode Fix (Neon ke liye require hai warna Error 500 aata hai)
     if "?" not in db_url:
         db_url += "?sslmode=require"
     elif "sslmode=" not in db_url:
@@ -22,14 +19,20 @@ if db_url:
         
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
-    # Local laptop ke liye purana SQLite rasta
     basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, 'database.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# --- Line 24 aur Table Creation ---
 db = SQLAlchemy(app)
+
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f"Database Error: {e}")
 
 # --- Models ---
 class User(db.Model):
@@ -49,13 +52,6 @@ class Product(db.Model):
     pic = db.Column(db.String(300))
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
-
-# Database tables creation (Neon par table banane ke liye)
-with app.app_context():
-    try:
-        db.create_all()
-    except Exception as e:
-        print(f"Database creation error: {e}")
 
 # --- Routes ---
 
@@ -121,7 +117,7 @@ def register():
             </script>'''
         except Exception as e:
             db.session.rollback()
-            flash("Database Error: Could not register.")
+            flash("Registration Error. Try again.")
             return redirect(url_for('register'))
 
     return render_template('register.html')
