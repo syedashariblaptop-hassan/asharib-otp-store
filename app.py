@@ -206,3 +206,10 @@ def logout():
 
 if __name__ == "__main__":
     app.run(debug=True)
+@app.route('/admin/delete_user/<int:user_id>')
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+    return redirect('/admin')
