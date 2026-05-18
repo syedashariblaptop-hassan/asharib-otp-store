@@ -6,22 +6,25 @@
     <title>Asharib Tech Store | Premium Digital Services</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
     <style>
-        /* (Aapka purana style saara same rahega, bas ye naye status ke liye add kiya hai) */
-        * { box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #000000; color: white; font-family: 'Poppins', sans-serif; margin: 0; padding: 0; overflow-x: hidden; width: 100%; }
 
-        /* Moving Notice Bar */
+        /* Announcement Bar */
         .announcement-bar { background: linear-gradient(90deg, #00ff88, #00bd65); color: black; overflow: hidden; white-space: nowrap; padding: 8px 0; font-size: 11px; font-weight: bold; position: fixed; top: 0; width: 100%; z-index: 2000; }
         .marquee { display: inline-block; animation: marquee 20s linear infinite; padding-left: 100%; }
         @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
+        /* Header / Logo Section */
+        .main-header { padding: 50px 15px 10px; display: flex; align-items: center; gap: 15px; }
+        .logo-text { color: #00ff88; font-weight: 800; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+
         /* Wallet Section */
         .wallet-card {
             background: linear-gradient(145deg, #111, #080808);
-            margin: 100px 15px 10px 15px;
+            margin: 10px 15px;
             padding: 20px;
             border-radius: 20px;
             border: 1px solid #222;
@@ -31,36 +34,40 @@
             box-shadow: 0 10px 30px rgba(0,255,136,0.05);
         }
         .wallet-info h2 { font-size: 12px; color: #888; margin: 0; text-transform: uppercase; }
-        .wallet-info .balance { font-size: 28px; color: #00ff88; font-weight: 800; margin: 5px 0; }
+        .wallet-info .balance { font-size: 26px; color: #00ff88; font-weight: 800; margin: 5px 0; }
 
-        /* Professional Pending Status */
-        .pending-status-container { margin: 10px 15px; display: flex; flex-direction: column; gap: 8px; }
-        .pending-item { 
-            background: rgba(255, 170, 0, 0.05); 
-            border: 1px solid rgba(255, 170, 0, 0.2); 
-            color: #ffaa00; 
-            padding: 10px 15px; 
-            border-radius: 12px; 
-            font-size: 11px; 
-            display: flex; 
-            justify-content: space-between;
-            align-items: center;
-            animation: fadeInDown 0.5s;
-        }
-        .status-dot { height: 8px; width: 8px; background-color: #ffaa00; border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
+        /* Sidenav Fixes */
+        .menu-icon { font-size: 20px; color: #00ff88; cursor: pointer; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 12px; border: 1px solid #00ff8833; }
+        
+        .sidenav { height: 100%; width: 0; position: fixed; z-index: 3000; top: 0; left: 0; background-color: #0a0a0a; overflow-x: hidden; transition: 0.4s; padding-top: 60px; border-right: 1px solid #00ff8833; box-shadow: 10px 0 30px rgba(0,0,0,0.8); }
+        .sidenav a { padding: 15px 32px; text-decoration: none; font-size: 16px; color: #888; display: block; transition: 0.3s; font-weight: 500; border-bottom: 1px solid #151515; }
+        .sidenav a:hover { color: #00ff88; background: #111; }
+        .sidenav a i { margin-right: 15px; width: 20px; color: #00ff88; }
+        .sidenav .closebtn { position: absolute; top: 15px; right: 25px; font-size: 30px; margin-left: 50px; border: none; color: #ff4444; }
+
+        /* User Profile in Menu */
+        .user-box { padding: 0 32px 20px; }
+        .user-box b { color: #00ff88; font-size: 16px; }
+
+        /* Pending Items */
+        .pending-status-container { margin: 10px 15px; }
+        .pending-item { background: rgba(255, 170, 0, 0.05); border: 1px solid rgba(255, 170, 0, 0.2); color: #ffaa00; padding: 12px; border-radius: 15px; font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .status-dot { height: 8px; width: 8px; background-color: #ffaa00; border-radius: 50%; display: inline-block; animation: blink 1s infinite; margin-right: 5px; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-        /* Rest of your styles... */
-        .add-funds { background: #00ff88; color: black; text-decoration: none; padding: 10px 15px; border-radius: 12px; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 5px; }
-        .menu-icon { position: fixed; top: 45px; left: 15px; font-size: 20px; color: #00ff88; cursor: pointer; z-index: 1001; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; border: 1px solid #00ff8833; }
-        .sidenav { height: 100%; width: 0; position: fixed; z-index: 2005; top: 0; left: 0; background-color: #111; overflow-x: hidden; transition: 0.5s; padding-top: 60px; border-right: 1px solid #00ff88; }
-        .category-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 0 15px 15px 15px; white-space: nowrap; scrollbar-width: none; }
-        .cat-item { background: #111; padding: 10px 20px; border-radius: 50px; border: 1px solid #222; font-size: 12px; color: #888; }
-        .cat-item.active { background: #00ff88; color: black; font-weight: bold; }
+        /* Category Scroll */
+        .category-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 10px 15px; white-space: nowrap; scrollbar-width: none; }
+        .category-scroll::-webkit-scrollbar { display: none; }
+        .cat-item { background: #111; padding: 10px 22px; border-radius: 50px; border: 1px solid #222; font-size: 12px; color: #888; transition: 0.3s; }
+        .cat-item.active { background: #00ff88; color: black; font-weight: bold; border-color: #00ff88; }
+
+        /* Grid & Cards */
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px; }
-        .card { background: #111; padding: 12px; border-radius: 20px; border: 1px solid #222; position: relative; }
-        .card img { width: 100%; border-radius: 15px; height: 130px; object-fit: cover; }
-        .btn { background: #00ff88; color: #000; padding: 12px; display: block; text-align: center; text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 13px; }
+        .card { background: #111; padding: 12px; border-radius: 20px; border: 1px solid #222; position: relative; transition: 0.3s; }
+        .card img { width: 100%; border-radius: 15px; height: 120px; object-fit: cover; margin-bottom: 10px; }
+        .card h3 { font-size: 14px; margin: 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .add-funds { background: #00ff88; color: black; text-decoration: none; padding: 10px 15px; border-radius: 12px; font-weight: 700; font-size: 11px; }
+        .btn { background: #00ff88; color: #000; padding: 10px; display: block; text-align: center; text-decoration: none; border-radius: 10px; font-weight: 800; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -71,7 +78,10 @@
         </div>
     </div>
 
-    <div class="menu-icon" onclick="openNav()"><i class="fas fa-bars"></i></div>
+    <div class="main-header">
+        <div class="menu-icon" onclick="openNav()"><i class="fas fa-bars"></i></div>
+        <div class="logo-text">ASHARIB TECH</div>
+    </div>
 
     <div class="wallet-card animate__animated animate__fadeIn">
         <div class="wallet-info">
@@ -87,11 +97,8 @@
         {% for dep in user.deposits %}
             {% if dep.status == 'Pending' %}
             <div class="pending-item">
-                <div>
-                    <span class="status-dot"></span>
-                    <b>Pending:</b> Rs. {{ dep.amount }}
-                </div>
-                <span style="font-size: 9px; opacity: 0.7;">Verifying Proof...</span>
+                <div><span class="status-dot"></span> <b>Pending:</b> Rs. {{ dep.amount }}</div>
+                <span style="opacity: 0.7;">Verifying...</span>
             </div>
             {% endif %}
         {% endfor %}
@@ -111,28 +118,40 @@
                 <img src="{{ p.pic }}">
                 <h3>{{ p.name }}</h3>
                 <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
-                    <span style="color: #00ff88; font-weight: bold;">Rs. {{ p.price }}</span>
+                    <span style="color: #00ff88; font-weight: 800; font-size: 13px;">Rs. {{ p.price }}</span>
                     <span style="font-size: 10px; color: #666;">Stock: {{ p.stock }}</span>
                 </div>
                 <a href="https://wa.me/923232522768?text=I want to buy {{ p.name }}" class="btn">Buy Now</a>
             </div>
             {% endfor %}
+        {% else %}
+            <p style="grid-column: span 2; text-align: center; color: #555; margin-top: 20px;">No services available.</p>
         {% endif %}
     </div>
 
     <div id="mySidenav" class="sidenav">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-        <p style="color: #00ff88; padding-left: 32px; font-size: 12px;">Logged in as: <br><b>{{ user.username }}</b></p>
-        <hr style="border: 0.5px solid #222; margin: 10px 0;">
+        <div class="user-box">
+            <span style="font-size: 11px; color: #666;">Logged in as:</span><br>
+            <b>{{ user.username }}</b>
+        </div>
         <a href="/"><i class="fas fa-home"></i> Home</a>
         <a href="/deposit"><i class="fas fa-wallet"></i> Deposit</a>
-        <a href="#"><i class="fas fa-history"></i> Orders</a>
-        <a href="/logout" style="color: #ff4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <a href="#"><i class="fas fa-history"></i> My Orders</a>
+        <a href="https://wa.me/923232522768"><i class="fab fa-whatsapp"></i> Support</a>
+        <a href="/logout" style="color: #ff4444; margin-top: 50px;"><i class="fas fa-power-off"></i> Logout</a>
     </div>
 
     <script>
-        function openNav() { document.getElementById("mySidenav").style.width = "250px"; }
+        function openNav() { document.getElementById("mySidenav").style.width = "260px"; }
         function closeNav() { document.getElementById("mySidenav").style.width = "0"; }
+        
+        // Touch se menu band karne ke liye
+        window.onclick = function(event) {
+            if (event.target == document.getElementById("mySidenav")) {
+                closeNav();
+            }
+        }
     </script>
 </body>
 </html>
