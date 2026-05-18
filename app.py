@@ -55,15 +55,19 @@ class Deposit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    # FIX: Is line ko db.Text rakha hai taake 500 chars ka error na aaye
+    # db.Text use kiya hai taake truncation error na aaye
     proof_url = db.Column(db.Text, nullable=False) 
     status = db.Column(db.String(20), default="Pending")
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+# --- Database Synchronization ---
 with app.app_context():
     try:
+        # FORCE RESET: Ye line purane tables delete kar degi
+        # Jab aapki website chal jaye, aap is line ko hata sakte hain.
+        db.drop_all() 
         db.create_all()
-        print("Database synchronized!")
+        print("Database Reset and Synchronized!")
     except Exception as e:
         print(f"Error syncing DB: {e}")
 
