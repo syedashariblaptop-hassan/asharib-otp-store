@@ -92,8 +92,9 @@
         
         .balance-badge { background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 5px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(0, 255, 136, 0.2); }
 
-        .block-btn { padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; }
-        .remove-user-btn { padding: 8px 12px; border-radius: 8px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; }
+        .block-btn { padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; display: inline-block; }
+        /* Style for Delete User Button */
+        .remove-user-btn { padding: 8px 12px; border-radius: 8px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; display: inline-block; margin-left: 5px; }
 
         .item-card { background: #111; padding: 15px 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #222; }
         .swal2-popup { background: #111 !important; color: #fff !important; border-radius: 20px !important; }
@@ -170,7 +171,7 @@
                     </td>
                     <td>
                         <span class="balance-badge">Rs. {{ u.balance if u.balance else '0' }}</span>
-                        <i class="fas fa-edit edit-balance" style="color:#555; cursor:pointer; margin-left:5px;" onclick="updateBalance('{{ u.id }}', '{{ u.username }}')"></i>
+                        <i class="fas fa-edit edit-balance" style="color:#00ff88; cursor:pointer; margin-left:5px;" onclick="updateBalance('{{ u.id }}', '{{ u.username }}')"></i>
                     </td>
                     <td>
                         {% if u.is_blocked %}
@@ -182,6 +183,10 @@
                     <td>
                         <a href="/admin/toggle_block/{{ u.id }}" class="block-btn" style="background: {{ 'linear-gradient(90deg, #f39c12, #e67e22)' if u.is_blocked else 'linear-gradient(90deg, #e74c3c, #c0392b)' }};">
                             {{ 'UNBLOCK' if u.is_blocked else 'BLOCK USER' }}
+                        </a>
+                        
+                        <a href="/admin/delete_user/{{ u.id }}" class="remove-user-btn" onclick="return confirm('Account permanently delete krna ha?')">
+                            <i class="fas fa-trash"></i>
                         </a>
                     </td>
                 </tr>
