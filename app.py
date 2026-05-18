@@ -55,7 +55,7 @@ class Deposit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    # db.Text use kiya hai taake truncation error na aaye
+    # db.Text use kiya hai taake mobile ki badi images (Base64) bina error ke save hon
     proof_url = db.Column(db.Text, nullable=False) 
     status = db.Column(db.String(20), default="Pending")
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
@@ -63,11 +63,9 @@ class Deposit(db.Model):
 # --- Database Synchronization ---
 with app.app_context():
     try:
-        # FORCE RESET: Ye line purane tables delete kar degi
-        # Jab aapki website chal jaye, aap is line ko hata sakte hain.
-        db.drop_all() 
+        # Note: db.drop_all() hata diya hai taake data mehfooz rahe
         db.create_all()
-        print("Database Reset and Synchronized!")
+        print("Database Synchronized!")
     except Exception as e:
         print(f"Error syncing DB: {e}")
 
@@ -116,6 +114,7 @@ def deposit():
             
         except Exception as e:
             db.session.rollback()
+            # Detailed error handle kiya taake debugging mein asani ho
             return jsonify({"status": "error", "message": str(e)}), 500
         
     return render_template('deposit.html', user=user)
