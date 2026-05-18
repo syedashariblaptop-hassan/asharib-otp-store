@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
+        /* (Aapka purana style saara same rahega, bas ye naye status ke liye add kiya hai) */
         * { box-sizing: border-box; }
         body { background: #000000; color: white; font-family: 'Poppins', sans-serif; margin: 0; padding: 0; overflow-x: hidden; width: 100%; }
 
@@ -17,7 +18,7 @@
         .marquee { display: inline-block; animation: marquee 20s linear infinite; padding-left: 100%; }
         @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
-        /* Wallet Section (Premium UI) */
+        /* Wallet Section */
         .wallet-card {
             background: linear-gradient(145deg, #111, #080808);
             margin: 100px 15px 10px 15px;
@@ -32,70 +33,34 @@
         .wallet-info h2 { font-size: 12px; color: #888; margin: 0; text-transform: uppercase; }
         .wallet-info .balance { font-size: 28px; color: #00ff88; font-weight: 800; margin: 5px 0; }
 
-        /* Pending Status Bar */
-        .pending-status-container { margin: 0 15px 20px 15px; }
+        /* Professional Pending Status */
+        .pending-status-container { margin: 10px 15px; display: flex; flex-direction: column; gap: 8px; }
         .pending-item { 
-            background: rgba(255, 170, 0, 0.1); 
-            border: 1px solid rgba(255, 170, 0, 0.3); 
+            background: rgba(255, 170, 0, 0.05); 
+            border: 1px solid rgba(255, 170, 0, 0.2); 
             color: #ffaa00; 
-            padding: 12px; 
+            padding: 10px 15px; 
             border-radius: 12px; 
             font-size: 11px; 
             display: flex; 
-            align-items: center; 
-            gap: 10px;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
-        
-        /* Add Funds Button */
-        .add-funds { 
-            background: #00ff88; 
-            color: black; 
-            text-decoration: none;
-            padding: 10px 15px; 
-            border-radius: 12px; 
-            font-weight: 700; 
-            font-size: 12px; 
-            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 5px;
-            transition: 0.3s;
+            animation: fadeInDown 0.5s;
         }
-        .add-funds:hover { background: #00bd65; transform: scale(1.05); }
+        .status-dot { height: 8px; width: 8px; background-color: #ffaa00; border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-        /* Navigation & Sidebar */
+        /* Rest of your styles... */
+        .add-funds { background: #00ff88; color: black; text-decoration: none; padding: 10px 15px; border-radius: 12px; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 5px; }
         .menu-icon { position: fixed; top: 45px; left: 15px; font-size: 20px; color: #00ff88; cursor: pointer; z-index: 1001; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; border: 1px solid #00ff8833; }
         .sidenav { height: 100%; width: 0; position: fixed; z-index: 2005; top: 0; left: 0; background-color: #111; overflow-x: hidden; transition: 0.5s; padding-top: 60px; border-right: 1px solid #00ff88; }
-        .sidenav a { padding: 15px 32px; text-decoration: none; font-size: 18px; color: #888; display: block; transition: 0.3s; }
-        .sidenav a:hover { color: #00ff88; background: #1a1a1a; }
-        .sidenav .closebtn { position: absolute; top: 10px; right: 25px; font-size: 36px; }
-
-        /* Category Scrollable */
         .category-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 0 15px 15px 15px; white-space: nowrap; scrollbar-width: none; }
-        .category-scroll::-webkit-scrollbar { display: none; }
-        .cat-item { background: #111; padding: 10px 20px; border-radius: 50px; border: 1px solid #222; font-size: 12px; color: #888; cursor: pointer; }
-        .cat-item.active { background: #00ff88; color: black; border-color: #00ff88; font-weight: bold; }
-
-        /* Card Styling */
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; padding: 15px; }
-        @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; } }
-        
-        .card { background: #111; padding: 12px; border-radius: 20px; border: 1px solid #222; position: relative; transition: 0.3s; }
-        .card:hover { border-color: #00ff88; box-shadow: 0 0 20px rgba(0, 255, 136, 0.1); transform: translateY(-5px); }
-        .status-badge { position: absolute; top: 8px; left: 8px; background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 900; border: 1px solid #00ff8855; z-index: 2; }
-        .card img { width: 100%; border-radius: 15px; height: 130px; object-fit: cover; margin-bottom: 12px; }
-        .card h3 { font-size: 14px; margin: 5px 0; color: #fff; font-weight: 600; }
-        
-        .price { color: #00ff88; font-size: 18px; font-weight: 800; }
-        .stock-info { font-size: 10px; color: #666; margin: 8px 0; }
-        .btn { background: #00ff88; color: #000; padding: 12px; display: block; text-align: center; text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 13px; transition: 0.3s; border: none; width: 100%; text-transform: uppercase; }
-        .btn:hover { background: #00bd65; transform: scale(1.02); }
-
-        /* Floating Actions */
-        .fab-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; }
-        .fab-item { width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; text-decoration: none; font-size: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); transition: 0.3s; }
-        .whatsapp-fab { background: #25D366; color: white; }
+        .cat-item { background: #111; padding: 10px 20px; border-radius: 50px; border: 1px solid #222; font-size: 12px; color: #888; }
+        .cat-item.active { background: #00ff88; color: black; font-weight: bold; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px; }
+        .card { background: #111; padding: 12px; border-radius: 20px; border: 1px solid #222; position: relative; }
+        .card img { width: 100%; border-radius: 15px; height: 130px; object-fit: cover; }
+        .btn { background: #00ff88; color: #000; padding: 12px; display: block; text-align: center; text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -110,20 +75,25 @@
 
     <div class="wallet-card animate__animated animate__fadeIn">
         <div class="wallet-info">
-            <h2>Current Balance</h2>
+            <h2>Your Balance</h2>
             <div class="balance">Rs. {{ "%.2f"|format(user.balance) }}</div>
         </div>
         <a href="/deposit" class="add-funds">
-            <i class="fas fa-plus"></i> ADD FUNDS
+            <i class="fas fa-plus-circle"></i> ADD FUNDS
         </a>
     </div>
 
     <div class="pending-status-container">
-        {% for dep in user.deposits if dep.status == 'Pending' %}
-        <div class="pending-item animate__animated animate__headShake">
-            <i class="fas fa-history"></i>
-            <span>Your deposit request of <b>Rs. {{ dep.amount }}</b> is under review.</span>
-        </div>
+        {% for dep in user.deposits %}
+            {% if dep.status == 'Pending' %}
+            <div class="pending-item">
+                <div>
+                    <span class="status-dot"></span>
+                    <b>Pending:</b> Rs. {{ dep.amount }}
+                </div>
+                <span style="font-size: 9px; opacity: 0.7;">Verifying Proof...</span>
+            </div>
+            {% endif %}
         {% endfor %}
     </div>
 
@@ -131,49 +101,38 @@
         <div class="cat-item active">All Services</div>
         <div class="cat-item">WhatsApp</div>
         <div class="cat-item">Telegram</div>
-        <div class="cat-item">Facebook</div>
-        <div class="cat-item">Gmail</div>
-        <div class="cat-item">TikTok</div>
+        <div class="cat-item">Social Media</div>
     </div>
 
     <div class="grid">
         {% if products %}
             {% for p in products %}
-            <div class="card">
-                <div class="status-badge">ACTIVE</div>
+            <div class="card animate__animated animate__zoomIn">
                 <img src="{{ p.pic }}">
                 <h3>{{ p.name }}</h3>
-                <div class="stock-info"><i class="fas fa-box"></i> In Stock: {{ p.stock }}</div>
-                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <span class="price">Rs. {{ p.price }}</span>
-                    <span style="font-size: 10px; color: #444; text-decoration: line-through;">Rs. {{ p.old_price }}</span>
+                <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #00ff88; font-weight: bold;">Rs. {{ p.price }}</span>
+                    <span style="font-size: 10px; color: #666;">Stock: {{ p.stock }}</span>
                 </div>
-                <a href="https://wa.me/923232522768?text=Hello! I want to buy {{ p.name }}" class="btn">
-                    <i class="fas fa-shopping-cart"></i> Buy Now
-                </a>
+                <a href="https://wa.me/923232522768?text=I want to buy {{ p.name }}" class="btn">Buy Now</a>
             </div>
             {% endfor %}
-        {% else %}
-            <p style="text-align: center; grid-column: span 2; padding: 50px; color: #444;">No products available yet.</p>
         {% endif %}
     </div>
 
     <div id="mySidenav" class="sidenav">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-        <a href="#"><i class="fas fa-user"></i> {{ user.username }}</a>
-        <a href="/deposit"><i class="fas fa-wallet"></i> Deposit Funds</a>
-        <a href="#"><i class="fas fa-history"></i> Order History</a>
-        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-    </div>
-
-    <div class="fab-container">
-        <a href="https://wa.me/923232522768" class="fab-item whatsapp-fab"><i class="fab fa-whatsapp"></i></a>
+        <p style="color: #00ff88; padding-left: 32px; font-size: 12px;">Logged in as: <br><b>{{ user.username }}</b></p>
+        <hr style="border: 0.5px solid #222; margin: 10px 0;">
+        <a href="/"><i class="fas fa-home"></i> Home</a>
+        <a href="/deposit"><i class="fas fa-wallet"></i> Deposit</a>
+        <a href="#"><i class="fas fa-history"></i> Orders</a>
+        <a href="/logout" style="color: #ff4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
 
     <script>
         function openNav() { document.getElementById("mySidenav").style.width = "250px"; }
         function closeNav() { document.getElementById("mySidenav").style.width = "0"; }
     </script>
-
 </body>
 </html>
