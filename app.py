@@ -79,7 +79,6 @@ def home():
     search_query = request.args.get('search', '').strip()
     all_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all() if search_query else Product.query.all()
     
-    # User ki apni deposits dashboard pe dikhane ke liye
     user_deposits = Deposit.query.filter_by(user_id=user.id).order_by(Deposit.timestamp.desc()).all()
     return render_template('store.html', products=all_products, user=user, user_deposits=user_deposits)
 
@@ -89,26 +88,36 @@ def deposit():
     user = User.query.get(session['user_id'])
     
     if request.method == 'POST':
-        amount = request.form.get('amount')
-        file = request.files.get('screenshot')
-        
-        if not amount or not file:
-            return jsonify({"status": "error", "message": "All fields required!"}), 400
-            
         try:
+            amount = request.form.get('amount')
+            file = request.files.get('screenshot')
+            
+            if not amount or not file:
+                return jsonify({"status": "error", "message": "Amount and Screenshot are required!"}), 400
+                
+            # File reading and encoding
             img_stream = file.read()
+            if not img_stream:
+                return jsonify({"status": "error", "message": "Empty file uploaded!"}), 400
+                
             img_base64 = base64.b64encode(img_stream).decode('utf-8')
             
-            # Amount ko float me convert kiya taake calculation sahi ho
-            new_dep = Deposit(user_id=user.id, amount=float(amount), proof_url=img_base64)
+            # Database Entry
+            new_dep = Deposit(
+                user_id=user.id, 
+                amount=float(amount), 
+                proof_url=img_base64,
+                status="Pending"
+            )
             db.session.add(new_dep)
             db.session.commit()
             
-            # AJAX success response
-            return jsonify({"status": "success", "message": "Request Submitted Successfully!"})
+            return jsonify({"status": "success", "message": "Deposit request submitted successfully!"})
+            
         except Exception as e:
             db.session.rollback()
-            return jsonify({"status": "error", "message": "Error processing deposit."}), 500
+            print(f"DEBUG ERROR: {str(e)}") # Terminal check ke liye
+            return jsonify({"status": "error", "message": f"Server Error: {str(e)}"}), 500
         
     return render_template('deposit.html', user=user)
 
@@ -116,32 +125,41 @@ def deposit():
 @app.route('/admin/deposits')
 def admin_deposits():
     if not session.get('admin'): return redirect(url_for('admin_login'))
-    # Sirf Pending requests dikhayega taake rush na ho
-    pending_requests = Deposit.query.filter_by(status='Pending').order_by(Deposit.timestamp.desc()).all()
-    return render_template('admin_deposits.html', requests=pending_requests)
+    # Ab hum saari requests dikhayenge, latest wali upar
+    all_requests = Deposit.query.order_by(Deposit.timestamp.desc()).all()
+    return render_template('admin_deposits.html', requests=all_requests)
 
 @app.route('/admin/approve_deposit/<int:id>')
 def approve_deposit(id):
     if not session.get('admin'): return jsonify({"status": "unauthorized"}), 401
-    dep = Deposit.query.get(id)
-    if dep and dep.status == "Pending":
-        user = User.query.get(dep.user_id)
-        # REAL Balance Update: Purana + Naya
-        user.balance = float(user.balance) + float(dep.amount)
-        dep.status = "Approved"
-        db.session.commit()
-        return jsonify({"status": "success"})
-    return jsonify({"status": "error"}), 400
+    try:
+        dep = Deposit.query.get(id)
+        if dep and dep.status == "Pending":
+            user = User.query.get(dep.user_id)
+            if user:
+                # Balance Update logic
+                user.balance = float(user.balance or 0) + float(dep.amount)
+                dep.status = "Approved"
+                db.session.commit()
+                return jsonify({"status": "success"})
+        return jsonify({"status": "error", "message": "Request not found or already processed"}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/admin/reject_deposit/<int:id>')
 def reject_deposit(id):
     if not session.get('admin'): return jsonify({"status": "unauthorized"}), 401
-    dep = Deposit.query.get(id)
-    if dep:
-        dep.status = "Rejected"
-        db.session.commit()
-        return jsonify({"status": "success"})
-    return jsonify({"status": "error"}), 400
+    try:
+        dep = Deposit.query.get(id)
+        if dep and dep.status == "Pending":
+            dep.status = "Rejected"
+            db.session.commit()
+            return jsonify({"status": "success"})
+        return jsonify({"status": "error", "message": "Request not found"}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # --- AUTH ROUTES ---
 @app.route('/auth', methods=['GET', 'POST'])
@@ -201,14 +219,18 @@ def admin_login():
 def admin():
     if not session.get('admin'): return redirect(url_for('admin_login'))
     if request.method == 'POST':
-        new_p = Product(
-            name=request.form['name'], old_price=request.form['old_price'], 
-            price=request.form['price'], stock=request.form['stock'], 
-            desc=request.form['desc'], pic=request.form['pic']
-        )
-        db.session.add(new_p)
-        db.session.commit()
-        return redirect(url_for('admin'))
+        try:
+            new_p = Product(
+                name=request.form['name'], old_price=request.form['old_price'], 
+                price=request.form['price'], stock=request.form['stock'], 
+                desc=request.form['desc'], pic=request.form['pic']
+            )
+            db.session.add(new_p)
+            db.session.commit()
+            return redirect(url_for('admin'))
+        except:
+            db.session.rollback()
+            flash("Error adding product.")
     return render_template('admin.html', products=Product.query.all(), users=User.query.all())
 
 @app.route('/admin/update_balance/<int:user_id>/<float:amount>')
@@ -216,7 +238,7 @@ def update_balance(user_id, amount):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
-        user.balance += amount
+        user.balance = float(user.balance or 0) + amount
         db.session.commit()
     return redirect(url_for('admin'))
 
@@ -268,4 +290,4 @@ def logout():
     return redirect(url_for('user_auth'))
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
