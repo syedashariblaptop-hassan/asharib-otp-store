@@ -9,9 +9,11 @@ app.secret_key = "asharib_tech_official_key"
 db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
 
 if db_url:
+    # Postgres protocol fix for SQLAlchemy
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     
+    # SSL mode fix for Neon/Vercel
     if "?" not in db_url:
         db_url += "?sslmode=require"
     elif "sslmode=" not in db_url:
@@ -23,14 +25,21 @@ else:
     db_path = os.path.join(basedir, 'database.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 
+# Connection pooling settings taake timeout error na aaye
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- Line 24 aur Table Creation ---
+# --- Database Initialization ---
 db = SQLAlchemy(app)
 
+# Tables ko force create karne ke liye
 with app.app_context():
     try:
         db.create_all()
+        print("Database tables checked/created successfully!")
     except Exception as e:
         print(f"Database Error: {e}")
 
@@ -79,16 +88,21 @@ def user_auth():
     if request.method == 'POST':
         username = request.form.get('email')
         password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
         
-        if user and user.password == password:
-            if user.is_blocked:
-                flash("Your account is suspended. Contact Admin.")
-                return redirect(url_for('user_auth'))
-            session['user_id'] = user.id
-            return redirect(url_for('home'))
-        
-        flash("Invalid email or password!")
+        try:
+            user = User.query.filter_by(username=username).first()
+            if user and user.password == password:
+                if user.is_blocked:
+                    flash("Your account is suspended. Contact Admin.")
+                    return redirect(url_for('user_auth'))
+                session['user_id'] = user.id
+                return redirect(url_for('home'))
+            
+            flash("Invalid email or password!")
+        except Exception as e:
+            print(f"Login Error: {e}")
+            flash("Server error during login. Please try again.")
+            
         return redirect(url_for('user_auth'))
         
     return render_template('auth.html')
@@ -103,12 +117,12 @@ def register():
             flash("All fields are required!")
             return redirect(url_for('register'))
 
-        if User.query.filter_by(username=username).first():
-            flash("User already exists with this email!")
-            return redirect(url_for('register'))
-
-        new_user = User(username=username, password=password, balance=0.0)
         try:
+            if User.query.filter_by(username=username).first():
+                flash("User already exists with this email!")
+                return redirect(url_for('register'))
+
+            new_user = User(username=username, password=password, balance=0.0)
             db.session.add(new_user)
             db.session.commit()
             return f'''<script>
@@ -117,6 +131,7 @@ def register():
             </script>'''
         except Exception as e:
             db.session.rollback()
+            print(f"Registration Error: {e}")
             flash("Registration Error. Try again.")
             return redirect(url_for('register'))
 
