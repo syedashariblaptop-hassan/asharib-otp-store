@@ -1,4 +1,5 @@
 import os
+import base64
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.pool import QueuePool
@@ -54,16 +55,16 @@ class Deposit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    proof_url = db.Column(db.String(500), nullable=False)
-    status = db.Column(db.String(20), default="Pending") # Pending, Approved, Rejected
+    proof_url = db.Column(db.Text, nullable=False) # Changed to Text for Base64 Image
+    status = db.Column(db.String(20), default="Pending")
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 with app.app_context():
     try:
         db.create_all()
-        print("Database tables synchronized!")
+        print("Database synchronized!")
     except Exception as e:
-        print(f"Database Creation Error: {e}")
+        print(f"Error: {e}")
 
 # --- Routes ---
 
@@ -79,7 +80,7 @@ def home():
     all_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all() if search_query else Product.query.all()
     return render_template('store.html', products=all_products, user=user)
 
-# --- DEPOSIT SYSTEM ---
+# --- UPDATED DEPOSIT SYSTEM (GALLERY & POPUP) ---
 @app.route('/deposit', methods=['GET', 'POST'])
 def deposit():
     if not session.get('user_id'): return redirect(url_for('user_auth'))
@@ -87,17 +88,30 @@ def deposit():
     
     if request.method == 'POST':
         amount = request.form.get('amount')
-        proof = request.form.get('proof_url')
+        file = request.files.get('screenshot') # Gallery file access
         
-        if not amount or not proof:
-            flash("All fields are required!")
+        if not amount or not file:
+            flash("Please fill all fields and select a screenshot!")
             return redirect(url_for('deposit'))
             
-        new_dep = Deposit(user_id=user.id, amount=float(amount), proof_url=proof)
-        db.session.add(new_dep)
-        db.session.commit()
-        flash("Deposit request submitted! Admin will verify it shortly.")
-        return redirect(url_for('home'))
+        try:
+            # Image ko Base64 mein convert karna (Database mein save karne ke liye)
+            img_stream = file.read()
+            img_base64 = base64.b64encode(img_stream).decode('utf-8')
+            
+            new_dep = Deposit(user_id=user.id, amount=float(amount), proof_url=img_base64)
+            db.session.add(new_dep)
+            db.session.commit()
+            
+            # Request Submit hone ka Popup logic
+            return f'''<script>
+                alert("Deposit Request Submitted Successfully! Please wait for Admin approval.");
+                window.location.href = "{url_for('home')}";
+            </script>'''
+        except Exception as e:
+            db.session.rollback()
+            flash("Error processing deposit. Try again.")
+            return redirect(url_for('deposit'))
         
     return render_template('deposit.html', user=user)
 
@@ -105,7 +119,7 @@ def deposit():
 @app.route('/admin/deposits')
 def admin_deposits():
     if not session.get('admin'): return redirect(url_for('admin_login'))
-    pending_requests = Deposit.query.filter_by(status="Pending").all()
+    pending_requests = Deposit.query.order_by(Deposit.timestamp.desc()).all()
     return render_template('admin_deposits.html', requests=pending_requests)
 
 @app.route('/admin/approve_deposit/<int:id>')
@@ -130,8 +144,7 @@ def reject_deposit(id):
         flash("Deposit rejected.")
     return redirect(url_for('admin_deposits'))
 
-# (Baqi saaray purane Admin aur Auth routes yahan niche rahenge...)
-
+# --- AUTH ROUTES ---
 @app.route('/auth', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def user_auth():
@@ -142,13 +155,13 @@ def user_auth():
             user = User.query.filter_by(username=login_email).first()
             if user and user.password == login_password:
                 if user.is_blocked:
-                    flash("Your account is suspended. Contact Admin.")
+                    flash("Your account is suspended.")
                     return redirect(url_for('user_auth'))
                 session['user_id'] = user.id
                 return redirect(url_for('home'))
             flash("Invalid email or password!")
         except Exception as e:
-            flash("Server error during login.")
+            flash("Server error.")
         return redirect(url_for('user_auth'))
     return render_template('auth.html')
 
@@ -158,7 +171,7 @@ def register():
         reg_email = request.form.get('email')
         reg_password = request.form.get('password')
         if not reg_email or not reg_password:
-            flash("All fields are required!")
+            flash("All fields required!")
             return redirect(url_for('register'))
         try:
             if User.query.filter_by(username=reg_email).first():
@@ -170,10 +183,11 @@ def register():
             return f'<script>alert("Account Created! Now Login."); window.location.href = "{url_for("user_auth")}";</script>'
         except Exception as e:
             db.session.rollback()
-            flash("Registration Error.")
-            return redirect(url_for('register'))
+            flash("Error during registration.")
+        return redirect(url_for('register'))
     return render_template('register.html')
 
+# --- ADMIN ROUTES ---
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -181,8 +195,7 @@ def admin_login():
         if password == 'asharib123':
             session['admin'] = True
             return redirect(url_for('admin'))
-        else:
-            flash("Wrong Admin Password!")
+        flash("Wrong Admin Password!")
     return render_template('admin_login.html')
 
 @app.route('/admin', methods=['GET', 'POST'])
@@ -231,7 +244,12 @@ def edit_product(id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     p = Product.query.get(id)
     if request.method == 'POST':
-        p.name, p.old_price, p.price, p.stock, p.desc, p.pic = request.form['name'], request.form['old_price'], request.form['price'], request.form['stock'], request.form['desc'], request.form['pic']
+        p.name = request.form['name']
+        p.old_price = request.form['old_price']
+        p.price = request.form['price']
+        p.stock = request.form['stock']
+        p.desc = request.form['desc']
+        p.pic = request.form['pic']
         db.session.commit()
         return redirect(url_for('admin'))
     return render_template('edit_product.html', p=p)
