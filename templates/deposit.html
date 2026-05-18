@@ -21,7 +21,6 @@
         .back-link { display: inline-block; margin-top: 20px; color: #555; text-decoration: none; font-size: 13px; transition: 0.3s; }
         .back-link:hover { color: #00ff88; }
         
-        /* Custom file input look */
         input[type="file"]::file-selector-button { background: #222; color: #00ff88; border: 1px solid #00ff8833; padding: 5px 10px; border-radius: 5px; margin-right: 10px; cursor: pointer; }
     </style>
 </head>
@@ -38,7 +37,7 @@
             <p><strong>Account Name:</strong> <span style="float: right; color: #eee;">Syed Asharab Hassan</span></p>
         </div>
 
-        <form id="depositForm" action="/deposit" method="POST" enctype="multipart/form-data">
+        <form id="depositForm">
             <label>Deposit Amount (PKR)</label>
             <input type="number" name="amount" placeholder="Enter Amount" required min="10">
             
@@ -49,33 +48,72 @@
                 <i class="fas fa-info-circle"></i> <b>Verification Note:</b> Please ensure the Transaction ID and Date are clearly visible in the screenshot.
             </p>
 
-            <button type="submit" class="btn-submit">Confirm Deposit</button>
+            <button type="submit" class="btn-submit" id="submitBtn">Confirm Deposit</button>
         </form>
 
         <a href="/" class="back-link"><i class="fas fa-chevron-left"></i> Back to Dashboard</a>
     </div>
 
     <script>
-        document.getElementById('depositForm').onsubmit = function(e) {
-            let timerInterval;
+        document.getElementById('depositForm').onsubmit = async function(e) {
+            e.preventDefault(); // Stop page refresh
+            
+            const btn = document.getElementById('submitBtn');
+            const formData = new FormData(this);
+            
+            // Show Processing Alert
             Swal.fire({
                 title: 'Processing Request',
-                html: 'Uploading your proof... <b></b>',
-                timer: 2500,
-                timerProgressBar: true,
-                background: '#111',
-                color: '#fff',
+                html: 'Uploading your proof to server...',
+                allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
-                    const b = Swal.getHtmlContainer().querySelector('b');
-                    timerInterval = setInterval(() => {
-                        b.textContent = Swal.getTimerLeft();
-                    }, 100);
                 },
-                willClose: () => {
-                    clearInterval(timerInterval);
-                }
+                background: '#111',
+                color: '#fff'
             });
+
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/deposit', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Your deposit request has been sent for review.',
+                        icon: 'success',
+                        background: '#111',
+                        color: '#fff',
+                        confirmButtonColor: '#00ff88'
+                    }).then(() => {
+                        window.location.href = '/'; // Redirect back
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message || 'Something went wrong',
+                        icon: 'error',
+                        background: '#111',
+                        color: '#fff'
+                    });
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                Swal.fire({
+                    title: 'Connection Error',
+                    text: 'Could not connect to the server.',
+                    icon: 'error',
+                    background: '#111',
+                    color: '#fff'
+                });
+                btn.disabled = false;
+            }
         };
     </script>
 
