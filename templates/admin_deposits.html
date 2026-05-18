@@ -1,20 +1,96 @@
-<h2>Pending Deposit Requests</h2>
-<table border="1">
-    <tr>
-        <th>User</th>
-        <th>Amount</th>
-        <th>Proof</th>
-        <th>Action</th>
-    </tr>
-    {% for req in requests %}
-    <tr>
-        <td>{{ req.user.username }}</td>
-        <td>{{ req.amount }}</td>
-        <td><a href="{{ req.proof_url }}" target="_blank">View Screenshot</a></td>
-        <td>
-            <a href="{{ url_for('approve_deposit', id=req.id) }}">Approve</a> | 
-            <a href="{{ url_for('reject_deposit', id=req.id) }}">Reject</a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Deposit Requests</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #000; color: white; font-family: 'Poppins', sans-serif; padding: 20px; }
+        h2 { color: #00ff88; text-align: center; }
+        .container { max-width: 900px; margin: auto; }
+        
+        table { width: 100%; border-collapse: collapse; background: #111; border-radius: 15px; overflow: hidden; margin-top: 20px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
+        th { background: #00ff88; color: black; text-transform: uppercase; font-size: 12px; }
+        
+        .btn { padding: 8px 15px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.3s; }
+        .btn-approve { background: #00ff88; color: black; }
+        .btn-reject { background: #ff4444; color: white; }
+        .btn-view { background: #333; color: white; cursor: pointer; border: none; }
+        
+        .btn:hover { opacity: 0.8; transform: scale(1.05); }
+
+        /* Screenshot Modal */
+        #imgModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
+        #imgModal img { max-width: 90%; max-height: 80%; border-radius: 10px; border: 2px solid #00ff88; }
+        .close-modal { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; }
+        .badge-pending { background: #ffaa0033; color: #ffaa00; border: 1px solid #ffaa00; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2><i class="fas fa-university"></i> Pending Deposits</h2>
+        <a href="/admin" style="color: #888; text-decoration: none; font-size: 14px;"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Amount</th>
+                    <th>Proof</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td>{{ req.user.username }}</td>
+                    <td><b>Rs. {{ req.amount }}</b></td>
+                    <td>
+                        <button class="btn btn-view" onclick="showImage('data:image/png;base64,{{ req.proof_url }}')">
+                            <i class="fas fa-image"></i> View
+                        </button>
+                    </td>
+                    <td><span class="badge badge-pending">{{ req.status }}</span></td>
+                    <td>
+                        <a href="{{ url_for('approve_deposit', id=req.id) }}" class="btn btn-approve">Approve</a>
+                        <a href="{{ url_for('reject_deposit', id=req.id) }}" class="btn btn-reject" onclick="return confirm('Reject this request?')">Reject</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #555;">No pending requests found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="imgModal">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <img id="modalImg" src="">
+    </div>
+
+    <script>
+        function showImage(src) {
+            document.getElementById('modalImg').src = src;
+            document.getElementById('imgModal').style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('imgModal').style.display = 'none';
+        }
+        // Close modal on click outside image
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('imgModal')) {
+                closeModal();
+            }
+        }
+    </script>
+
+</body>
+</html>
