@@ -1,6 +1,6 @@
 import os
 import base64
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.pool import QueuePool
 from datetime import datetime
@@ -55,7 +55,7 @@ class Deposit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    proof_url = db.Column(db.Text, nullable=False) # Changed to Text for Base64 Image
+    proof_url = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default="Pending")
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -78,9 +78,11 @@ def home():
     
     search_query = request.args.get('search', '').strip()
     all_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all() if search_query else Product.query.all()
-    return render_template('store.html', products=all_products, user=user)
+    
+    # User ki apni deposits dashboard pe dikhane ke liye
+    user_deposits = Deposit.query.filter_by(user_id=user.id).order_by(Deposit.timestamp.desc()).all()
+    return render_template('store.html', products=all_products, user=user, user_deposits=user_deposits)
 
-# --- UPDATED DEPOSIT SYSTEM (GALLERY & POPUP) ---
 @app.route('/deposit', methods=['GET', 'POST'])
 def deposit():
     if not session.get('user_id'): return redirect(url_for('user_auth'))
@@ -88,30 +90,25 @@ def deposit():
     
     if request.method == 'POST':
         amount = request.form.get('amount')
-        file = request.files.get('screenshot') # Gallery file access
+        file = request.files.get('screenshot')
         
         if not amount or not file:
-            flash("Please fill all fields and select a screenshot!")
-            return redirect(url_for('deposit'))
+            return jsonify({"status": "error", "message": "All fields required!"}), 400
             
         try:
-            # Image ko Base64 mein convert karna (Database mein save karne ke liye)
             img_stream = file.read()
             img_base64 = base64.b64encode(img_stream).decode('utf-8')
             
+            # Amount ko float me convert kiya taake calculation sahi ho
             new_dep = Deposit(user_id=user.id, amount=float(amount), proof_url=img_base64)
             db.session.add(new_dep)
             db.session.commit()
             
-            # Request Submit hone ka Popup logic
-            return f'''<script>
-                alert("Deposit Request Submitted Successfully! Please wait for Admin approval.");
-                window.location.href = "{url_for('home')}";
-            </script>'''
+            # AJAX success response
+            return jsonify({"status": "success", "message": "Request Submitted Successfully!"})
         except Exception as e:
             db.session.rollback()
-            flash("Error processing deposit. Try again.")
-            return redirect(url_for('deposit'))
+            return jsonify({"status": "error", "message": "Error processing deposit."}), 500
         
     return render_template('deposit.html', user=user)
 
@@ -119,30 +116,32 @@ def deposit():
 @app.route('/admin/deposits')
 def admin_deposits():
     if not session.get('admin'): return redirect(url_for('admin_login'))
-    pending_requests = Deposit.query.order_by(Deposit.timestamp.desc()).all()
+    # Sirf Pending requests dikhayega taake rush na ho
+    pending_requests = Deposit.query.filter_by(status='Pending').order_by(Deposit.timestamp.desc()).all()
     return render_template('admin_deposits.html', requests=pending_requests)
 
 @app.route('/admin/approve_deposit/<int:id>')
 def approve_deposit(id):
-    if not session.get('admin'): return redirect(url_for('admin_login'))
+    if not session.get('admin'): return jsonify({"status": "unauthorized"}), 401
     dep = Deposit.query.get(id)
     if dep and dep.status == "Pending":
         user = User.query.get(dep.user_id)
-        user.balance += dep.amount
+        # REAL Balance Update: Purana + Naya
+        user.balance = float(user.balance) + float(dep.amount)
         dep.status = "Approved"
         db.session.commit()
-        flash(f"Approved {dep.amount} for {user.username}")
-    return redirect(url_for('admin_deposits'))
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error"}), 400
 
 @app.route('/admin/reject_deposit/<int:id>')
 def reject_deposit(id):
-    if not session.get('admin'): return redirect(url_for('admin_login'))
+    if not session.get('admin'): return jsonify({"status": "unauthorized"}), 401
     dep = Deposit.query.get(id)
     if dep:
         dep.status = "Rejected"
         db.session.commit()
-        flash("Deposit rejected.")
-    return redirect(url_for('admin_deposits'))
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error"}), 400
 
 # --- AUTH ROUTES ---
 @app.route('/auth', methods=['GET', 'POST'])
