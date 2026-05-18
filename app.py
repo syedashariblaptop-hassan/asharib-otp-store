@@ -1,47 +1,44 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.pool import QueuePool
 
 app = Flask(__name__)
 app.secret_key = "asharib_tech_official_key"
 
 # --- DATABASE CONFIGURATION ---
-db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+# Neon aur Vercel ke liye optimized config
+db_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
 
 if db_url:
     # Postgres protocol fix for SQLAlchemy
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     
-    # SSL mode fix for Neon/Vercel
-    if "?" not in db_url:
-        db_url += "?sslmode=require"
-    elif "sslmode=" not in db_url:
-        db_url += "&sslmode=require"
-        
+    # SSL mode forced for Neon taake connection reject na ho
+    if "sslmode" not in db_url:
+        if "?" in db_url:
+            db_url += "&sslmode=require"
+        else:
+            db_url += "?sslmode=require"
+            
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
+    # Local testing ke liye SQLite
     basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, 'database.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 
-# Connection pooling settings taake timeout error na aaye
+# Connection pooling settings taake timeout ya connection errors na aayin
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
+    "poolclass": QueuePool,
 }
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # --- Database Initialization ---
 db = SQLAlchemy(app)
-
-# Tables ko force create karne ke liye
-with app.app_context():
-    try:
-        db.create_all()
-        print("Database tables checked/created successfully!")
-    except Exception as e:
-        print(f"Database Error: {e}")
 
 # --- Models ---
 class User(db.Model):
@@ -61,6 +58,14 @@ class Product(db.Model):
     pic = db.Column(db.String(300))
     rating = db.Column(db.String(10), default="4.9")
     reviews = db.Column(db.String(10), default="128")
+
+# Tables ko auto-create karne ke liye logic
+with app.app_context():
+    try:
+        db.create_all()
+        print("Database tables synchronized!")
+    except Exception as e:
+        print(f"Database Creation Error: {e}")
 
 # --- Routes ---
 
@@ -86,12 +91,14 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def user_auth():
     if request.method == 'POST':
-        username = request.form.get('email')
-        password = request.form.get('password')
+        login_email = request.form.get('email')
+        login_password = request.form.get('password')
         
         try:
-            user = User.query.filter_by(username=username).first()
-            if user and user.password == password:
+            # Username column mein email hi store hoti hai hamare system mein
+            user = User.query.filter_by(username=login_email).first()
+            
+            if user and user.password == login_password:
                 if user.is_blocked:
                     flash("Your account is suspended. Contact Admin.")
                     return redirect(url_for('user_auth'))
@@ -100,8 +107,8 @@ def user_auth():
             
             flash("Invalid email or password!")
         except Exception as e:
-            print(f"Login Error: {e}")
-            flash("Server error during login. Please try again.")
+            print(f"Login Database Error: {e}")
+            flash("Server error during login. Database might be updating.")
             
         return redirect(url_for('user_auth'))
         
@@ -110,19 +117,19 @@ def user_auth():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form.get('email')
-        password = request.form.get('password')
+        reg_email = request.form.get('email')
+        reg_password = request.form.get('password')
         
-        if not username or not password:
+        if not reg_email or not reg_password:
             flash("All fields are required!")
             return redirect(url_for('register'))
 
         try:
-            if User.query.filter_by(username=username).first():
+            if User.query.filter_by(username=reg_email).first():
                 flash("User already exists with this email!")
                 return redirect(url_for('register'))
 
-            new_user = User(username=username, password=password, balance=0.0)
+            new_user = User(username=reg_email, password=reg_password, balance=0.0)
             db.session.add(new_user)
             db.session.commit()
             return f'''<script>
@@ -132,7 +139,7 @@ def register():
         except Exception as e:
             db.session.rollback()
             print(f"Registration Error: {e}")
-            flash("Registration Error. Try again.")
+            flash("Registration Error. Database busy, please try again.")
             return redirect(url_for('register'))
 
     return render_template('register.html')
