@@ -12,14 +12,12 @@
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 25px; margin-top: 10px; }
         .header h1 { font-size: 22px; color: #00ff88; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Stats Section */
         .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #222; text-align: center; position: relative; overflow: hidden; }
         .stat-card i { color: #00ff88; font-size: 24px; margin-bottom: 10px; }
         .stat-card h3 { margin: 5px 0; font-size: 24px; font-weight: 800; }
         .stat-card p { margin: 0; font-size: 12px; color: #888; text-transform: uppercase; }
 
-        /* Deposit Management Card */
         .deposit-management-box {
             background: linear-gradient(145deg, #1a1a1a, #111);
             padding: 20px;
@@ -80,7 +78,6 @@
         .btn-upload { width: 100%; padding: 16px; background: #00ff88; color: black; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; transition: 0.3s; font-size: 14px; text-transform: uppercase; margin-top: 10px; }
         .btn-cancel { display: block; text-align: center; width: 100%; padding: 12px; background: #333; color: white; border-radius: 10px; text-decoration: none; font-weight: bold; margin-top: 10px; font-size: 13px; }
 
-        /* User Table */
         .section-title { color: #00ff88; border-left: 4px solid #00ff88; padding-left: 15px; margin: 40px 0 20px 0; font-size: 20px; font-weight: 700; }
         .table-responsive { width: 100%; overflow-x: auto; background: #111; border-radius: 15px; border: 1px solid #222; }
         .user-table { width: 100%; border-collapse: collapse; min-width: 700px; }
@@ -136,7 +133,7 @@
     <div class="box">
         {% if edit_product %}
             <h2><i class="fas fa-edit"></i> Edit Service: {{ edit_product.name }}</h2>
-            <form method="POST" action="/admin/edit_product/{{ edit_product.id }}/">
+            <form method="POST" action="/admin/edit_product/{{ edit_product.id }}">
                 <input type="text" name="name" value="{{ edit_product.name }}" placeholder="Service Name" required>
                 <div class="price-row">
                     <input type="number" name="old_price" value="{{ edit_product.old_price }}" placeholder="Old Price (Rs.)" required>
@@ -147,4 +144,101 @@
                 <textarea name="desc" rows="2" placeholder="Brief service info..." required>{{ edit_product.desc }}</textarea>
                 <button type="submit" class="btn-upload">UPDATE SERVICE</button>
                 <a href="/admin" class="btn-cancel">CANCEL EDIT</a>
-            </form
+            </form>
+        {% else %}
+            <h2><i class="fas fa-plus-circle"></i> Add New Service</h2>
+            <form method="POST" action="/admin">
+                <input type="text" name="name" placeholder="Service Name (e.g. WhatsApp India)" required>
+                <div class="price-row">
+                    <input type="number" name="old_price" placeholder="Old Price (Rs.)" required>
+                    <input type="number" name="price" placeholder="Current Price (Rs.)" required>
+                </div>
+                <input type="number" name="stock" placeholder="Initial Stock Quantity" required>
+                <input type="text" name="pic" placeholder="Image URL (Icon Link)" required>
+                <textarea name="desc" rows="2" placeholder="Brief service info..." required></textarea>
+                <button type="submit" class="btn-upload">DEPLOY TO STORE</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <h2 class="section-title">User Management</h2>
+    <div class="table-responsive">
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>Customer Name</th>
+                    <th>Wallet Balance</th>
+                    <th>Account Status</th>
+                    <th>Control Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div style="font-weight: bold;">{{ u.username }}</div>
+                    </td>
+                    <td>
+                        <span class="balance-badge">Rs. {{ u.balance if u.balance else '0' }}</span>
+                        <i class="fas fa-edit edit-balance" style="color:#00ff88; cursor:pointer; margin-left:5px;" onclick="updateBalance('{{ u.id }}', '{{ u.username }}')"></i>
+                    </td>
+                    <td>
+                        {% if u.is_blocked %}
+                            <span style="color: #ff4444; font-size: 12px; font-weight: 900;"><i class="fas fa-user-slash"></i> BLOCKED</span>
+                        {% else %}
+                            <span style="color: #00ff88; font-size: 12px; font-weight: 900;"><i class="fas fa-check-circle"></i> ACTIVE</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/admin/toggle_block/{{ u.id }}" class="block-btn" style="background: {{ 'linear-gradient(90deg, #f39c12, #e67e22)' if u.is_blocked else 'linear-gradient(90deg, #e74c3c, #c0392b)' }};">
+                            {{ 'UNBLOCK' if u.is_blocked else 'BLOCK USER' }}
+                        </a>
+                        
+                        <a href="/admin/delete_user/{{ u.id }}" class="remove-user-btn" onclick="return confirm('Account permanently delete krna ha?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="section-title">Manage Services</h2>
+    {% for p in products %}
+    <div class="item-card">
+        <div>
+            <strong>{{ p.name }}</strong>
+            <div style="font-size: 12px; color: #00ff88;">Price: Rs. {{ p.price }} | Stock: {{ p.stock }}</div>
+        </div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <a href="/admin/edit_product/{{ p.id }}" style="color: #3498db; text-decoration: none; font-size: 16px;"><i class="fas fa-pen"></i></a>
+            <a href="/admin/delete_product/{{ p.id }}" style="color: #ff4444; text-decoration: none; font-size: 16px;" onclick="return confirm('Product delete kr dein?')"><i class="fas fa-trash"></i></a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div style="text-align: center; margin: 40px 0;">
+        <a href="/" style="color: #00ff88; text-decoration: none; font-weight: bold; margin-right: 20px;"><i class="fas fa-external-link-alt"></i> VIEW STORE</a>
+        <a href="/logout" style="color: #888; text-decoration: none;"><i class="fas fa-power-off"></i> LOGOUT</a>
+    </div>
+</div>
+
+<script>
+    async function updateBalance(userId, username) {
+        const { value: amount } = await Swal.fire({
+            title: `Update Balance for ${username}`,
+            input: 'number',
+            inputLabel: 'Enter amount',
+            showCancelButton: true,
+            background: '#111',
+            color: '#fff',
+            confirmButtonColor: '#00ff88'
+        });
+        if (amount !== undefined && amount !== '') { 
+            window.location.href = `/admin/update_balance/${userId}/${amount}`; 
+        }
+    }
+</script>
+</body>
+</html>
