@@ -3,7 +3,413 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Control Panel | Asharib Tech</title><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Control Panel | Asharib Tech</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        * { box-sizing: border-box; }
+        body { background: #0a0a0a; color: white; font-family: 'Poppins', sans-serif; padding: 15px; margin: 0; overflow-x: hidden; }
+        .admin-container { max-width: 1000px; margin: auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 15px; margin-bottom: 25px; margin-top: 10px; }
+        .header h1 { font-size: 22px; color: #00ff88; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #222; text-align: center; position: relative; overflow: hidden; }
+        .stat-card i { color: #00ff88; font-size: 24px; margin-bottom: 10px; }
+        .stat-card h3 { margin: 5px 0; font-size: 24px; font-weight: 800; }
+        .stat-card p { margin: 0; font-size: 12px; color: #888; text-transform: uppercase; }
+
+        /* Support Box Grid Setup */
+        .support-panel-box { display: grid; grid-template-columns: 280px 1fr; gap: 15px; height: 450px; background: #111; border: 1px solid #222; border-radius: 20px; overflow: hidden; margin-bottom: 25px; }
+        .support-users-list { background: #141414; border-right: 1px solid #222; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: none; }
+        .support-users-list::-webkit-scrollbar { display: none; }
+        .support-user-item { padding: 15px; border-bottom: 1px solid #1a1a1a; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 500; }
+        .support-user-item:hover, .support-user-item.active { background: rgba(0, 255, 136, 0.05); color: #00ff88; }
+        
+        /* Red Notification Dot for Admin Panel */
+        .chat-unread-dot { width: 8px; height: 8px; background: #ff4444; border-radius: 50%; box-shadow: 0 0 10px #ff4444; animation: blink 1.2s infinite; }
+        
+        .support-chat-area { display: flex; flex-direction: column; background: #0d0d0d; height: 100%; position: relative; }
+        .support-chat-header { padding: 12px 15px; background: #141414; border-bottom: 1px solid #222; font-size: 13px; font-weight: 600; color: #00ff88; }
+        .support-chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; }
+        .support-chat-messages::-webkit-scrollbar { display: none; }
+        
+        .admin-msg-bubble { max-width: 75%; padding: 8px 12px; font-size: 12px; border-radius: 12px; line-height: 1.4; word-wrap: break-word; }
+        .admin-msg-bubble.user { background: #1a1a1a; color: white; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #333; }
+        .admin-msg-bubble.admin { background: #00ff88; color: black; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 500; }
+        .admin-msg-bubble.system { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.2); color: #ff4444; align-self: center; border-radius: 8px; text-align: center; max-width: 100%; font-size: 11px; font-weight: bold; }
+        .admin-msg-time { font-size: 8px; opacity: 0.5; display: block; text-align: right; margin-top: 3px; }
+        .admin-msg-bubble.admin .admin-msg-time { color: rgba(0,0,0,0.6); }
+
+        .support-chat-footer { padding: 10px; background: #141414; border-top: 1px solid #222; display: flex; gap: 8px; }
+        .support-chat-footer input { flex: 1; background: #070707; border: 1px solid #333; padding: 10px; border-radius: 10px; color: white; font-size: 12px; outline: none; margin: 0; }
+        .support-chat-footer input:focus { border-color: #00ff88; }
+        .support-chat-footer button { background: #00ff88; color: black; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+
+        .box { background: #111; padding: 25px; border-radius: 20px; border: 1px solid #222; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 35px; }
+        h2 { color: #00ff88; margin-top: 0; font-size: 18px; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+        
+        input, textarea { width: 100%; padding: 14px; margin: 10px 0; background: #050505; color: #fff; border: 1px solid #222; border-radius: 12px; outline: none; font-family: 'Poppins', sans-serif; transition: 0.2s; }
+        input:focus, textarea:focus { border-color: #00ff88; }
+        
+        .price-row { display: flex; gap: 10px; }
+        .btn-upload { width: 100%; padding: 16px; background: #00ff88; color: black; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; font-size: 14px; text-transform: uppercase; margin-top: 10px; letter-spacing: 0.5px; }
+        .btn-cancel { display: block; text-align: center; width: 100%; padding: 12px; background: #222; color: white; border-radius: 12px; text-decoration: none; font-weight: bold; margin-top: 10px; font-size: 13px; border: 1px solid #333; }
+
+        .section-title { color: #00ff88; border-left: 4px solid #00ff88; padding-left: 15px; margin: 40px 0 20px 0; font-size: 18px; font-weight: 700; text-transform: uppercase; }
+        .table-responsive { width: 100%; overflow-x: auto; background: #111; border-radius: 15px; border: 1px solid #222; margin-bottom: 25px; }
+        .user-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        .user-table th { background: #161616; color: #00ff88; padding: 15px; text-align: left; font-size: 11px; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid #222; }
+        .user-table td { padding: 15px; border-bottom: 1px solid #1a1a1a; font-size: 14px; color: #ddd; }
+        
+        .balance-badge { background: rgba(0, 255, 136, 0.08); color: #00ff88; padding: 5px 12px; border-radius: 8px; font-weight: 700; border: 1px solid rgba(0, 255, 136, 0.15); }
+        .action-btn { padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 11px; text-decoration: none; display: inline-block; border: none; cursor: pointer; }
+        .approve-btn { background: #00ff88; color: black; }
+        .reject-btn { background: #ff4444; color: white; margin-left: 5px; }
+
+        .block-btn { padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; display: inline-block; border: none; }
+        .remove-user-btn { padding: 8px 12px; border-radius: 8px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; display: inline-block; margin-left: 5px; }
+
+        .item-card { background: #111; padding: 15px 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #222; transition: 0.2s; }
+        .item-card:hover { border-color: #333; }
+        .swal2-popup { background: #111 !important; color: #fff !important; border-radius: 20px !important; border: 1px solid #222 !important; font-family: 'Poppins', sans-serif; }
+        .screenshot-link { color: #00ff88; text-decoration: underline; font-size: 12px; font-weight: 600; }
+
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        /* --- MOBILE RESPONSIVE INTEL FIX --- */
+        @media (max-width: 768px) {
+            .support-panel-box { grid-template-columns: 1fr !important; height: auto !important; }
+            .support-users-list { border-right: none !important; border-bottom: 1px solid #222 !important; max-height: 140px !important; }
+            .support-chat-area { height: 420px !important; }
+            .support-chat-footer { position: relative !important; display: flex !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <div class="header">
+        <h1><i class="fas fa-shield-alt"></i> Asharib Admin</h1>
+        <div style="background: rgba(0,255,136,0.08); padding: 5px 15px; border-radius: 50px; color: #00ff88; font-size: 11px; font-weight: bold; border: 1px solid rgba(0,255,136,0.2); display: flex; align-items: center; gap: 6px;">
+            <i class="fas fa-circle" id="globalLiveDot" style="font-size: 7px; color: {% if unread_chats %}#ff4444{% else %}#00ff88{% endif %}; animation: blink 1s infinite;"></i> LIVE SYSTEM
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <h3>{{ users|length }}</h3>
+            <p>Customers</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-layer-group"></i>
+            <h3>{{ products|length }}</h3>
+            <p>Services</p>
+        </div>
+    </div>
+
+    <h2 class="section-title"><i class="fas fa-receipt"></i> Pending Deposit Requests</h2>
+    <div class="table-responsive">
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>User / Customer</th>
+                    <th>Amount Request</th>
+                    <th>Trx ID (EasyPaisa)</th>
+                    <th>Proof Screenshot</th>
+                    <th>Action Operations</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if deposits %}
+                    {% for d in deposits if d.status == 'Pending' %}
+                    <tr>
+                        <td><strong>{{ d.username }}</strong></td>
+                        <td><span class="balance-badge">Rs. {{ d.amount }}</span></td>
+                        <td><code style="color: #f39c12; font-weight: bold;">{{ d.trx_id }}</code></td>
+                        <td>
+                            <a href="/static/uploads/{{ d.screenshot }}" target="_blank" class="screenshot-link">
+                                <i class="fas fa-image"></i> View Receipt
+                            </a>
+                        </td>
+                        <td>
+                            <a href="/admin/approve_deposit/{{ d.id }}" class="action-btn approve-btn" onclick="return confirm('Yeh payment verify ho chuki hai?')">APPROVE</a>
+                            <a href="/admin/reject_deposit/{{ d.id }}" class="action-btn reject-btn" onclick="return confirm('Yeh request reject kr dein?')">REJECT</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #666; font-size: 13px; padding: 25px;">
+                            <i class="fas fa-check-circle" style="color: #00ff88;"></i> Koi bhi pending request mojood nahi hai.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2><i class="fas fa-headset"></i> Live Customer Support Center</h2>
+    <div class="support-panel-box">
+        <div class="support-users-list">
+            {% for u in users %}
+                <div class="support-user-item" id="user-tab-{{ u.id }}" onclick="selectUserChat('{{ u.id }}', '{{ u.username }}')">
+                    <span><i class="fas fa-user-circle" style="margin-right: 5px;"></i> {{ u.username.split('@')[0] }}</span>
+                    <span class="chat-unread-dot" id="dot-user-{{ u.id }}" style="display: none;"></span>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="support-chat-area">
+            <div class="support-chat-header" id="activeChatTitle">Select a user to begin live operations...</div>
+            <div class="support-chat-messages" id="adminChatBody">
+                <p style="text-align: center; color: #555; font-size: 12px; margin-top: 150px;">No conversation active.</p>
+            </div>
+            <div class="support-chat-footer">
+                <input type="text" id="adminChatInput" placeholder="Type message or .close to finish..." disabled onkeypress="handleAdminChatKey(event)">
+                <button onclick="sendAdminMessage()" id="adminSendBtn" disabled><i class="fas fa-paper-plane"></i> Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="box">
+        {% if edit_product %}
+            <h2><i class="fas fa-edit"></i> Edit Service: {{ edit_product.name }}</h2>
+            <form method="POST" action="/admin/edit_product/{{ edit_product.id }}">
+                <input type="text" name="name" value="{{ edit_product.name }}" placeholder="Service Name (e.g. WhatsApp India)" required>
+                <div class="price-row">
+                    <input type="number" name="old_price" value="{{ edit_product.old_price }}" placeholder="Old Price Display (Rs.)" required>
+                    <input type="number" name="price" value="{{ edit_product.price }}" placeholder="Selling Price (Rs.)" required>
+                </div>
+                <textarea name="keys" rows="5" placeholder="Paste your dynamic stock items/keys here (One Item Per Line)">{{ edit_product.keys }}</textarea>
+                <input type="text" name="pic" value="{{ edit_product.pic }}" placeholder="Product Image CDN URL" required>
+                <textarea name="desc" rows="3" placeholder="Write premium product profile summary details..." required>{{ edit_product.desc }}</textarea>
+                <button type="submit" class="btn-upload">UPDATE SERVICE CHANGES</button>
+                <a href="/admin" class="btn-cancel">CANCEL OPERATIONS</a>
+            </form>
+        {% else %}
+            <h2><i class="fas fa-plus-circle"></i> Add New Service</h2>
+            <form method="POST" action="/admin">
+                <input type="text" name="name" placeholder="Service Name (e.g. WhatsApp India Premium)" required>
+                <div class="price-row">
+                    <input type="number" name="old_price" placeholder="Old Price Cutoff (Rs.)" required>
+                    <input type="number" name="price" placeholder="Selling Price (Rs.)" required>
+                </div>
+                <textarea name="keys" rows="5" placeholder="Paste your dynamic stock items/keys here (One Item Per Line)&#10;Account1:Password123&#10;Account2:Password456"></textarea>
+                <input type="text" name="pic" placeholder="Service Icon URL / PNG Image Link" required>
+                <textarea name="desc" rows="3" placeholder="Write premium product profile summary details..." required></textarea>
+                <button type="submit" class="btn-upload">DEPLOY LIVE TO STORE</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <h2 class="section-title">User Account Registry</h2>
+    <div class="table-responsive">
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>Customer Name</th>
+                    <th>Wallet Balance</th>
+                    <th>Account Status</th>
+                    <th>Control Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><div style="font-weight: 600; color: #fff;">{{ u.username }}</div></td>
+                    <td>
+                        <span class="balance-badge">Rs. {{ u.balance if u.balance else '0' }}</span>
+                        <i class="fas fa-edit edit-balance" style="color:#00ff88; cursor:pointer; margin-left:7px; font-size: 12px;" onclick="updateBalance('{{ u.id }}', '{{ u.username }}')"></i>
+                    </td>
+                    <td>
+                        {% if u.is_blocked %}
+                            <span style="color: #ff4444; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;"><i class="fas fa-user-slash"></i> SUSPENDED</span>
+                        {% else %}
+                            <span style="color: #00ff88; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;"><i class="fas fa-check-circle"></i> ACTIVE</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/admin/toggle_block/{{ u.id }}" class="block-btn" style="background: {{ 'linear-gradient(90deg, #f39c12, #d35400)' if u.is_blocked else 'linear-gradient(90deg, #e74c3c, #c0392b)' }};">
+                            {{ 'UNSUSPEND' if u.is_blocked else 'SUSPEND USER' }}
+                        </a>
+                        <a href="/admin/delete_user/{{ u.id }}" class="remove-user-btn" onclick="return confirm('Account permanently delete krna ha?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="section-title">Active Platform Products</h2>
+    {% for p in products %}
+    <div class="item-card">
+        <div>
+            <strong style="color: #fff; font-weight: 600; font-size: 14px;">{{ p.name }}</strong>
+            <div style="font-size: 12px; color: #777; margin-top: 3px;">
+                Price: <span style="color: #00ff88; font-weight: bold;">Rs. {{ p.price }}</span> | Stock Remaining: <span style="color: #61e8a2; font-weight: bold;">{{ p.stock }} items</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 18px; align-items: center;">
+            <a href="/admin/edit_product/{{ p.id }}" style="color: #3498db; text-decoration: none; font-size: 15px;"><i class="fas fa-pen"></i></a>
+            <a href="/admin/delete_product/{{ p.id }}" style="color: #ff4444; text-decoration: none; font-size: 15px;" onclick="return confirm('Product delete kr dein?')"><i class="fas fa-trash"></i></a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div style="text-align: center; margin: 50px 0;">
+        <a href="/" style="color: #00ff88; text-decoration: none; font-weight: bold; margin-right: 25px; font-size: 14px;"><i class="fas fa-external-link-alt"></i> LAUNCH STOREFRONT</a>
+        <a href="/logout" style="color: #666; text-decoration: none; font-size: 14px;"><i class="fas fa-power-off"></i> LOGOUT PANEL</a>
+    </div>
+</div>
+
+<script>
+    let activeUserId = null;
+    let activeInterval = null;
+
+    function selectUserChat(userId, username) {
+        activeUserId = userId.toString();
+        document.querySelectorAll('.support-user-item').forEach(item => item.classList.remove('active'));
+        document.getElementById(`user-tab-${userId}`).classList.add('active');
+        document.getElementById("activeChatTitle").innerText = `Operations Hub -> Chatting with: ${username}`;
+        
+        const inputField = document.getElementById("adminChatInput");
+        const sendBtn = document.getElementById("adminSendBtn");
+        inputField.disabled = false;
+        sendBtn.disabled = false;
+        inputField.placeholder = "Type message or .close to finish...";
+        inputField.focus();
+        
+        const currentDot = document.getElementById(`dot-user-${userId}`);
+        if (currentDot) currentDot.style.display = 'none';
+        
+        if (activeInterval) clearInterval(activeInterval);
+        fetchAdminMessages();
+        activeInterval = setInterval(fetchAdminMessages, 3000);
+    }
+
+    function fetchAdminMessages() {
+        if (!activeUserId) return;
+        fetch(`/api/chat/fetch/${activeUserId}`)
+        .then(res => res.json())
+        .then(data => {
+            const body = document.getElementById("adminChatBody");
+            const inputField = document.getElementById("adminChatInput");
+            const sendBtn = document.getElementById("adminSendBtn");
+            
+            let htmlStr = "";
+            data.messages.forEach(msg => {
+                if (msg.message.startsWith("SYSTEM_NOTIFICATION:")) {
+                    let cleanMsg = msg.message.replace("SYSTEM_NOTIFICATION:", "");
+                    htmlStr += `<div class="admin-msg-bubble system">${cleanMsg}</div>`;
+                } else {
+                    htmlStr += `
+                        <div class="admin-msg-bubble ${msg.sender}">
+                            ${msg.message}
+                            <span class="admin-msg-time">${msg.time}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            if (data.chat_status === "Closed") {
+                inputField.placeholder = "This conversation has been closed.";
+                inputField.disabled = true;
+                sendBtn.disabled = true;
+            } else {
+                if (inputField.disabled) {
+                    inputField.disabled = false;
+                    sendBtn.disabled = false;
+                    inputField.placeholder = "Type message or .close to finish...";
+                }
+            }
+
+            const oldHTML = body.innerHTML;
+            if (oldHTML !== htmlStr) {
+                body.innerHTML = htmlStr;
+                body.scrollTop = body.scrollHeight;
+            }
+        })
+        .catch(err => console.log("Fetch error:", err));
+    }
+
+    function sendAdminMessage() {
+        const input = document.getElementById("adminChatInput");
+        const msg = input.value.trim();
+        if (!msg || !activeUserId) return;
+        
+        fetch(`/api/chat/admin_send/${activeUserId}`, {
+            transformRequest: false,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+        })
+        .then(res => res.json())
+        .then(data => {
+            input.value = "";
+            fetchAdminMessages();
+        })
+        .catch(err => console.log("Admin transmission error:", err));
+    }
+
+    function handleAdminChatKey(e) {
+        if (e.key === 'Enter') sendAdminMessage();
+    }
+
+    setInterval(() => {
+        fetch('/api/chat/unread_check')
+        .then(res => res.json())
+        .then(data => {
+            const dot = document.getElementById("globalLiveDot");
+            if (data.unread) { dot.style.color = "#ff4444"; } else { dot.style.color = "#00ff88"; }
+        });
+
+        document.querySelectorAll('.support-user-item').forEach(item => {
+            let id = item.id.replace('user-tab-', '').toString();
+            if (id === activeUserId) return; 
+            
+            fetch(`/api/chat/fetch/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                const targetDot = document.getElementById(`dot-user-${id}`);
+                if (!targetDot) return;
+                if (data.chat_status === "Active" && data.messages && data.messages.length > 0) {
+                    let lastMsg = data.messages[data.messages.length - 1];
+                    if (lastMsg && lastMsg.sender === 'user') { targetDot.style.display = 'block'; }
+                } else { targetDot.style.display = 'none'; }
+            })
+            .catch(err => console.log("Background badge sync error:", err));
+        });
+    }, 3000);
+
+    async function updateBalance(userId, username) {
+        const { value: amount } = await Swal.fire({
+            title: `Update Balance for ${username}`,
+            input: 'number',
+            inputLabel: 'Enter absolute amount',
+            showCancelButton: true,
+            background: '#111',
+            color: '#fff',
+            confirmButtonColor: '#00ff88',
+            cancelButtonColor: '#222'
+        });
+        if (amount !== undefined && amount !== '') { 
+            window.location.href = `/admin/update_balance/${userId}/${amount}`; 
+        }
+    }
+</script>
+</body>
+</html>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
