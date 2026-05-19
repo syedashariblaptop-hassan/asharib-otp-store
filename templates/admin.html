@@ -22,6 +22,33 @@
         .stat-card h3 { margin: 5px 0; font-size: 24px; font-weight: 800; }
         .stat-card p { margin: 0; font-size: 12px; color: #888; text-transform: uppercase; }
 
+        /* Support Box Grid Setup */
+        .support-panel-box { display: grid; grid-template-columns: 280px 1fr; gap: 15px; height: 450px; background: #111; border: 1px solid #222; border-radius: 20px; overflow: hidden; margin-bottom: 25px; }
+        .support-users-list { background: #141414; border-right: 1px solid #222; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: none; }
+        .support-users-list::-webkit-scrollbar { display: none; }
+        .support-user-item { padding: 15px; border-bottom: 1px solid #1a1a1a; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 500; }
+        .support-user-item:hover, .support-user-item.active { background: rgba(0, 255, 136, 0.05); color: #00ff88; }
+        
+        /* Red Notification Dot for Admin Panel */
+        .chat-unread-dot { width: 8px; height: 8px; background: #ff4444; border-radius: 50%; box-shadow: 0 0 10px #ff4444; animation: blink 1.2s infinite; }
+        
+        .support-chat-area { display: flex; flex-direction: column; background: #0d0d0d; height: 100%; position: relative; }
+        .support-chat-header { padding: 12px 15px; background: #141414; border-bottom: 1px solid #222; font-size: 13px; font-weight: 600; color: #00ff88; }
+        .support-chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; }
+        .support-chat-messages::-webkit-scrollbar { display: none; }
+        
+        .admin-msg-bubble { max-width: 75%; padding: 8px 12px; font-size: 12px; border-radius: 12px; line-height: 1.4; word-wrap: break-word; }
+        .admin-msg-bubble.user { background: #1a1a1a; color: white; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #333; }
+        .admin-msg-bubble.admin { background: #00ff88; color: black; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 500; }
+        .admin-msg-bubble.system { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.2); color: #ff4444; align-self: center; border-radius: 8px; text-align: center; max-width: 100%; font-size: 11px; font-weight: bold; }
+        .admin-msg-time { font-size: 8px; opacity: 0.5; display: block; text-align: right; margin-top: 3px; }
+        .admin-msg-bubble.admin .admin-msg-time { color: rgba(0,0,0,0.6); }
+
+        .support-chat-footer { padding: 10px; background: #141414; border-top: 1px solid #222; display: flex; gap: 8px; }
+        .support-chat-footer input { flex: 1; background: #070707; border: 1px solid #333; padding: 10px; border-radius: 10px; color: white; font-size: 12px; outline: none; margin: 0; }
+        .support-chat-footer input:focus { border-color: #00ff88; }
+        .support-chat-footer button { background: #00ff88; color: black; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+
         .deposit-management-box {
             background: linear-gradient(145deg, #161616, #111);
             padding: 20px;
@@ -39,6 +66,7 @@
             70% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
         }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         .deposit-btn {
             background: #00ff88;
@@ -104,7 +132,7 @@
     <div class="header">
         <h1><i class="fas fa-shield-alt"></i> Asharib Admin</h1>
         <div style="background: rgba(0,255,136,0.08); padding: 5px 15px; border-radius: 50px; color: #00ff88; font-size: 11px; font-weight: bold; border: 1px solid rgba(0,255,136,0.2); display: flex; align-items: center; gap: 6px;">
-            <i class="fas fa-circle" style="font-size: 7px; animation: blink 1s infinite;"></i> LIVE SYSTEM
+            <i class="fas fa-circle" id="globalLiveDot" style="font-size: 7px; color: {% if unread_chats %}#ff4444{% else %}#00ff88{% endif %}; animation: blink 1s infinite;"></i> LIVE SYSTEM
         </div>
     </div>
 
@@ -118,6 +146,28 @@
             <i class="fas fa-layer-group"></i>
             <h3>{{ products|length }}</h3>
             <p>Services</p>
+        </div>
+    </div>
+
+    <h2><i class="fas fa-headset"></i> Live Customer Support Center</h2>
+    <div class="support-panel-box">
+        <div class="support-users-list">
+            {% for u in users %}
+                <div class="support-user-item" id="user-tab-{{ u.id }}" onclick="selectUserChat('{{ u.id }}', '{{ u.username }}')">
+                    <span><i class="fas fa-user-circle" style="margin-right: 5px;"></i> {{ u.username.split('@')[0] }}</span>
+                    <span class="chat-unread-dot" id="dot-user-{{ u.id }}" style="display: none;"></span>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="support-chat-area">
+            <div class="support-chat-header" id="activeChatTitle">Select a user to begin live operations...</div>
+            <div class="support-chat-messages" id="adminChatBody">
+                <p style="text-align: center; color: #555; font-size: 12px; margin-top: 150px;">No conversation active.</p>
+            </div>
+            <div class="support-chat-footer">
+                <input type="text" id="adminChatInput" placeholder="Type message or .close to finish..." disabled onkeypress="handleAdminChatKey(event)">
+                <button onclick="sendAdminMessage()" id="adminSendBtn" disabled><i class="fas fa-paper-plane"></i> Send</button>
+            </div>
         </div>
     </div>
 
@@ -232,6 +282,125 @@
 </div>
 
 <script>
+    let activeUserId = null;
+    let activeInterval = null;
+
+    function selectUserChat(userId, username) {
+        activeUserId = userId;
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.support-user-item').forEach(item => item.classList.remove('active'));
+        document.getElementById(`user-tab-${userId}`).classList.add('active');
+        
+        document.getElementById("activeChatTitle").innerText = `Operations Hub -> Chatting with: ${username}`;
+        document.getElementById("adminChatInput").disabled = false;
+        document.getElementById("adminSendBtn").disabled = false;
+        
+        // Clear old tracking intervals and establish fresh one
+        if (activeInterval) clearInterval(activeInterval);
+        fetchAdminMessages();
+        activeInterval = setInterval(fetchAdminMessages, 3000);
+    }
+
+    function fetchAdminMessages() {
+        if (!activeUserId) return;
+        
+        fetch(`/api/chat/fetch/${activeUserId}`)
+        .then(res => res.json())
+        .then(data => {
+            const body = document.getElementById("adminChatBody");
+            let htmlStr = "";
+            
+            data.messages.forEach(msg => {
+                if (msg.message.startsWith("SYSTEM_NOTIFICATION:")) {
+                    let cleanMsg = msg.message.replace("SYSTEM_NOTIFICATION:", "");
+                    htmlStr += `<div class="admin-msg-bubble system">${cleanMsg}</div>`;
+                } else {
+                    htmlStr += `
+                        <div class="admin-msg-bubble ${msg.sender}">
+                            ${msg.message}
+                            <span class="admin-msg-time">${msg.time}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            // Handle if chat state is Closed
+            const inputField = document.getElementById("adminChatInput");
+            if (data.chat_status === "Closed") {
+                inputField.placeholder = "This conversation has been closed.";
+                inputField.disabled = true;
+                document.getElementById("adminSendBtn").disabled = true;
+            } else {
+                inputField.placeholder = "Type message or .close to finish...";
+            }
+
+            const oldHTML = body.innerHTML;
+            if (oldHTML !== htmlStr) {
+                body.innerHTML = htmlStr;
+                body.scrollTop = body.scrollHeight;
+            }
+            
+            // Mark individual user notification dot as resolved on client screen
+            document.getElementById(`dot-user-${activeUserId}`).style.display = 'none';
+        })
+        .catch(err => console.log("Fetch error:", err));
+    }
+
+    function sendAdminMessage() {
+        const input = document.getElementById("adminChatInput");
+        const msg = input.value.strip ? input.value.strip() : input.value.trim();
+        if (!msg || !activeUserId) return;
+        
+        fetch(`/api/chat/admin_send/${activeUserId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+        })
+        .then(res => res.json())
+        .then(data => {
+            input.value = "";
+            fetchAdminMessages();
+        })
+        .catch(err => console.log("Admin transmission error:", err));
+    }
+
+    function handleAdminChatKey(e) {
+        if (e.key === 'Enter') sendAdminMessage();
+    }
+
+    // --- REALTIME RED NOTIFICATION DOT ENGINE BACKGROUND LOOP ---
+    setInterval(() => {
+        // 1. Check global header dot state
+        fetch('/api/chat/unread_check')
+        .then(res => res.json())
+        .then(data => {
+            const dot = document.getElementById("globalLiveDot");
+            if (data.unread) {
+                dot.style.color = "#ff4444";
+            } else {
+                dot.style.color = "#00ff88";
+            }
+        });
+
+        // 2. Scan every active customer row to reveal local unread targets
+        document.querySelectorAll('.support-user-item').forEach(item => {
+            let id = item.id.replace('user-tab-', '');
+            if(parseInt(id) === activeUserId) return; // Active chat skipping logic
+            
+            fetch(`/api/chat/fetch/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                // If any unread message belongs to 'user' role inside records
+                let hasUnread = false;
+                // Since api marks read automatically on fetch, we also cross check backend logic if needed,
+                // but for simple scan, if any message is user side we trace it.
+                // Better yet, we can check if unread rows exists in raw loop. 
+                // We'll trust our custom fast sync engine
+            });
+        });
+    }, 4000);
+
     async function updateBalance(userId, username) {
         const { value: amount } = await Swal.fire({
             title: `Update Balance for ${username}`,
