@@ -125,6 +125,34 @@ def deposit():
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if not session.get('admin'): return redirect(url_for('admin_login'))
+    
+    # PRODUCT UPLOAD FUNCTIONALITY FIX
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            old_price = request.form.get('old_price')
+            price = request.form.get('price')
+            stock = request.form.get('stock')
+            pic = request.form.get('pic')
+            desc = request.form.get('desc')
+            
+            new_product = Product(
+                name=name,
+                old_price=old_price,
+                price=price,
+                stock=stock,
+                pic=pic,
+                desc=desc
+            )
+            db.session.add(new_product)
+            db.session.commit()
+            flash("Product uploaded successfully!")
+            return redirect(url_for('admin'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Product upload error: {e}")
+            flash("Error uploading product.")
+            
     pending_count = Deposit.query.filter_by(status="Pending").count()
     return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0))
 
