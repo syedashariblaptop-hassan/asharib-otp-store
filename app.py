@@ -59,11 +59,22 @@ class Deposit(db.Model):
     status = db.Column(db.String(20), default="Pending")
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+class SupportChat(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    sender = db.Column(db.String(10), nullable=False) # 'user' ya 'admin'
+    is_read = db.Column(db.Boolean, default=False)     # Admin red dot trace karne ke liye
+    status = db.Column(db.String(15), default="Active") # 'Active' ya 'Closed'
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user_rel = db.relationship('User', backref='chats', lazy=True)
+
 # --- Database Synchronization ---
 with app.app_context():
     try:
         db.create_all()
-        print("Database Synchronized!")
+        print("Database Synchronized with Live Chat Engine!")
     except Exception as e:
         print(f"Error syncing DB: {e}")
 
@@ -160,7 +171,8 @@ def admin():
     except Exception:
         pending_exists = False
         
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=pending_exists, edit_product=None)
+    unread_chats = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
+    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=pending_exists, edit_product=None, unread_chats=unread_chats)
 
 # --- PRODUCT EDIT ROUTE ---
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
@@ -190,7 +202,8 @@ def edit_product(product_id):
     except Exception:
         pending_exists = False
         
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=pending_exists, edit_product=product)
+    unread_chats = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
+    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=pending_exists, edit_product=product, unread_chats=unread_chats)
 
 # --- PRODUCT DELETE ROUTE ---
 @app.route('/admin/delete_product/<int:product_id>', methods=['GET', 'POST'])
@@ -283,6 +296,91 @@ def reject_deposit(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# --- LIVE SUPPORT CHAT SYSTEM ---
+
+@app.route('/api/chat/send', methods=['POST'])
+def chat_send_user():
+    if not session.get('user_id'): return jsonify({"status": "unauthorized"}), 401
+    data = request.get_json()
+    msg_text = data.get('message', '').strip()
+    
+    if not msg_text: return jsonify({"status": "error", "message": "Empty message"}), 400
+    
+    new_msg = SupportChat(
+        user_id=session['user_id'],
+        message=msg_text,
+        sender='user',
+        is_read=False,
+        status='Active'
+    )
+    db.session.add(new_msg)
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+@app.route('/api/chat/admin_send/<int:user_id>', methods=['POST'])
+def chat_send_admin(user_id):
+    if not session.get('admin'): return jsonify({"status": "unauthorized"}), 401
+    data = request.get_json()
+    msg_text = data.get('message', '').strip()
+    
+    if not msg_text: return jsonify({"status": "error", "message": "Empty message"}), 400
+
+    if msg_text.lower() == '.close':
+        SupportChat.query.filter_by(user_id=user_id, status='Active').update({SupportChat.status: 'Closed'})
+        close_msg = SupportChat(
+            user_id=user_id,
+            message="SYSTEM_NOTIFICATION: Chat has been closed by admin.",
+            sender='admin',
+            is_read=True,
+            status='Closed'
+        )
+        db.session.add(close_msg)
+        db.session.commit()
+        return jsonify({"status": "closed", "message": "Chat closed successfully."})
+
+    new_msg = SupportChat(
+        user_id=user_id,
+        message=msg_text,
+        sender='admin',
+        is_read=True,
+        status='Active'
+    )
+    db.session.add(new_msg)
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+@app.route('/api/chat/fetch/<int:user_id>')
+def chat_fetch(user_id):
+    if not session.get('admin') and session.get('user_id') != user_id:
+        return jsonify({"status": "unauthorized"}), 401
+        
+    chats = SupportChat.query.filter_by(user_id=user_id).order_by(SupportChat.timestamp.asc()).all()
+    
+    if session.get('admin'):
+        SupportChat.query.filter_by(user_id=user_id, is_read=False).update({SupportChat.is_read: True})
+        db.session.commit()
+        
+    messages_list = []
+    chat_status = "Active"
+    
+    for c in chats:
+        chat_status = c.status
+        messages_list.append({
+            "sender": c.sender,
+            "message": c.message,
+            "time": c.timestamp.strftime('%I:%M %p')
+        })
+        
+    return jsonify({"messages": messages_list, "chat_status": chat_status})
+
+@app.route('/api/chat/unread_check')
+def chat_unread_check():
+    if not session.get('admin'): return jsonify({"unread": False})
+    unread_exists = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
+    return jsonify({"unread": unread_exists})
+
 
 # --- USER AUTHENTICATION ---
 
