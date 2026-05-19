@@ -308,6 +308,7 @@ def chat_send_user():
     
     if not msg_text: return jsonify({"status": "error", "message": "Empty message"}), 400
     
+    # User message bhej raha hai matlab session lazmi "Active" hona chahiye
     new_msg = SupportChat(
         user_id=session['user_id'],
         message=msg_text,
@@ -363,10 +364,14 @@ def chat_fetch(user_id):
         db.session.commit()
         
     messages_list = []
+    
+    # 🌟 CORE FIXED ENGINE LOGIC 🌟
+    # Default status set to Active. Agar aakhri valid entry database me hai toh uska exact real-time status pick hoga.
     chat_status = "Active"
+    if chats:
+        chat_status = chats[-1].status  # Hamesha bilkul taaza/latest message ka status check karein
     
     for c in chats:
-        chat_status = c.status
         messages_list.append({
             "sender": c.sender,
             "message": c.message,
@@ -381,18 +386,17 @@ def chat_unread_check():
     unread_exists = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
     return jsonify({"unread": unread_exists})
 
-# --- NEW PROFESSIONAL CHAT SESSION RESET ROUTE ---
+# --- PROFESSIONAL CHAT SESSION RESET ROUTE ---
 @app.route('/api/chat/reset', methods=['POST'])
 def chat_reset():
     if not session.get('user_id'): return jsonify({"status": "unauthorized"}), 401
     try:
         user_id = session['user_id']
         
-        # Purani saari messages jo is user ki thi unko status 'Closed' mark karo 
-        # aur naye siray se room ko fresh reset karne ke liye update lagayein
+        # Purani saari messages ko Closed kar dein
         SupportChat.query.filter_by(user_id=user_id).update({SupportChat.status: 'Closed'})
         
-        # Ek pristine fresh setup alert log register karein taaki admin panel par naye ticket ka trigger chala jaye
+        # Ek pristine fresh setup alert log register karein jo Admin ke liye pure system ko status 'Active' dega
         init_msg = SupportChat(
             user_id=user_id,
             message="SYSTEM_NOTIFICATION: User has started a new support session.",
