@@ -38,7 +38,7 @@ class User(db.Model):
     password = db.Column(db.String(120), nullable=False)
     is_blocked = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Float, default=0.0)
-    deposits = db.relationship('Deposit', backref='user', lazy=True)
+    deposites = db.relationship('Deposit', backref='user', lazy=True)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -88,6 +88,11 @@ def deposit():
     if not session.get('user_id'): return redirect(url_for('user_auth'))
     user = User.query.get(session['user_id'])
     
+    # NoneType error handling secure fix
+    if not user:
+        session.clear()
+        return redirect(url_for('user_auth'))
+        
     if request.method == 'POST':
         try:
             amount = request.form.get('amount')
@@ -115,6 +120,41 @@ def deposit():
             return jsonify({"status": "error", "message": str(e)}), 500
         
     return render_template('deposit.html', user=user)
+
+# --- ADMIN ACTIONS & ROUTES ---
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    pending_count = Deposit.query.filter_by(status="Pending").count()
+    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0))
+
+@app.route('/admin/toggle_block/<int:user_id>')
+def toggle_block(user_id):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    user = User.query.get(user_id)
+    if user:
+        user.is_blocked = not user.is_blocked
+        db.session.commit()
+    return redirect('/admin')
+
+@app.route('/admin/delete_user/<int:user_id>')
+def delete_user(user_id):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    user = User.query.get(user_id)
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+    return redirect('/admin')
+
+@app.route('/admin/update_balance/<int:user_id>/<float:amount>')
+def update_balance(user_id, amount):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    user = User.query.get(user_id)
+    if user:
+        user.balance = amount
+        db.session.commit()
+    return redirect('/admin')
 
 @app.route('/admin/deposits')
 def admin_deposits():
@@ -151,6 +191,8 @@ def reject_deposit(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# --- USER AUTHENTICATION ---
 
 @app.route('/auth', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
@@ -192,31 +234,11 @@ def admin_login():
         flash("Wrong password!")
     return render_template('admin_login.html')
 
-@app.route('/admin', methods=['GET', 'POST'])
-def admin():
-    if not session.get('admin'): return redirect(url_for('admin_login'))
-    # Yahan check ho raha hai ke koi pending request hai ya nahi
-    pending_count = Deposit.query.filter_by(status="Pending").count()
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0))
-
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('user_auth'))
 
+# --- SERVER RUN (Hamesha end par hona chahiye) ---
 if __name__ == "__main__":
     app.run(debug=True)
-@app.route('/admin/delete_user/<int:user_id>')
-def delete_user(user_id):
-    user = User.query.get(user_id)
-    if user:
-        db.session.delete(user)
-        db.session.commit()
-    return redirect('/admin')
-@app.route('/admin/update_balance/<int:user_id>/<float:amount>')
-def update_balance(user_id, amount):
-    user = User.query.get(user_id)
-    if user:
-        user.balance = amount
-        db.session.commit()
-    return redirect('/admin')
