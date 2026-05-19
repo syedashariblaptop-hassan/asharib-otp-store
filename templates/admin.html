@@ -32,7 +32,6 @@
             box-shadow: 0 0 20px rgba(0,255,136,0.05);
         }
 
-        /* NEW: Red Dot Glow Animation */
         @keyframes pulse-red {
             0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
@@ -54,7 +53,6 @@
             position: relative;
         }
         
-        /* Jab pending ho toh button thoda glow karega */
         .btn-glow {
             border: 2px solid #ff4444 !important;
             animation: pulse-red 2s infinite;
@@ -62,7 +60,6 @@
 
         .deposit-btn:hover { background: white; transform: scale(1.05); }
 
-        /* Red Dot / Badge Style */
         .pending-badge {
             background: #ff4444;
             color: white;
@@ -74,7 +71,6 @@
             border: 2px solid #111;
         }
         
-        /* Box Styling */
         .box { background: #111; padding: 25px; border-radius: 20px; border: 1px solid #222; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 35px; }
         h2 { color: #00ff88; margin-top: 0; font-size: 18px; display: flex; align-items: center; gap: 10px; }
         
@@ -93,7 +89,6 @@
         .balance-badge { background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 5px 10px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(0, 255, 136, 0.2); }
 
         .block-btn { padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; text-decoration: none; font-size: 11px; display: inline-block; }
-        /* Style for Delete User Button */
         .remove-user-btn { padding: 8px 12px; border-radius: 8px; background: #ff4444; color: white; text-decoration: none; font-size: 11px; display: inline-block; margin-left: 5px; }
 
         .item-card { background: #111; padding: 15px 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid #222; }
@@ -181,11 +176,11 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="/admin/toggle_block/{{ u.id }}" class="block-btn" style="background: {{ 'linear-gradient(90deg, #f39c12, #e67e22)' if u.is_blocked else 'linear-gradient(90deg, #e74c3c, #c0392b)' }};">
+                        <a href="/admin/toggle_block/{{ u.id }}/" class="block-btn" style="background: {{ 'linear-gradient(90deg, #f39c12, #e67e22)' if u.is_blocked else 'linear-gradient(90deg, #e74c3c, #c0392b)' }};">
                             {{ 'UNBLOCK' if u.is_blocked else 'BLOCK USER' }}
                         </a>
                         
-                        <a href="/admin/delete_user/{{ u.id }}" class="remove-user-btn" onclick="return confirm('Account permanently delete krna ha?')">
+                        <a href="/admin/delete_user/{{ u.id }}/" class="remove-user-btn" onclick="return confirm('Account permanently delete krna ha?')">
                             <i class="fas fa-trash"></i>
                         </a>
                     </td>
@@ -226,7 +221,9 @@
             color: '#fff',
             confirmButtonColor: '#00ff88'
         });
-        if (amount) { window.location.href = `/admin/update_balance/${userId}/${amount}`; }
+        if (amount !== undefined && amount !== '') { 
+            window.location.href = `/admin/update_balance/${userId}/${amount}/`; 
+        }
     }
 </script>
 </body>
