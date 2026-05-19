@@ -164,6 +164,31 @@
 
         .user-box { padding: 0 32px 20px; }
         .user-box b { color: #00ff88; font-size: 16px; }
+
+        /* LIVE SUPPORT SYSTEM WIDGET CSS */
+        .chat-floating-btn { position: fixed; bottom: 20px; right: 20px; background: #00ff88; color: black; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4); z-index: 4000; border: none; outline: none; transition: 0.3s; }
+        .chat-floating-btn:active { transform: scale(0.9); }
+        
+        .chat-window-box { position: fixed; bottom: 85px; right: 20px; width: 330px; height: 430px; background: #0d0d0d; border: 1px solid #00ff8833; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: none; flex-direction: column; overflow: hidden; z-index: 4000; transition: 0.3s; }
+        .chat-header { background: #141414; border-bottom: 1px solid #222; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h4 { margin: 0; font-size: 13px; color: #00ff88; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .chat-header .chat-dot { width: 8px; height: 8px; background: #00ff88; border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
+        .chat-header button { background: none; border: none; color: #ff4444; font-size: 16px; cursor: pointer; }
+        
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; }
+        .chat-body::-webkit-scrollbar { display: none; }
+        
+        .msg-bubble { max-width: 75%; padding: 8px 12px; font-size: 12px; border-radius: 12px; line-height: 1.4; word-wrap: break-word; }
+        .msg-bubble.user { background: #00ff88; color: black; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 500; }
+        .msg-bubble.admin { background: #1a1a1a; color: white; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #333; }
+        .msg-bubble.system { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.2); color: #ff4444; text-align: center; max-width: 100%; align-self: center; border-radius: 8px; font-size: 11px; font-weight: bold; }
+        .msg-time { font-size: 8px; opacity: 0.5; display: block; text-align: right; margin-top: 3px; }
+        .msg-bubble.user .msg-time { color: rgba(0,0,0,0.6); }
+
+        .chat-footer { padding: 10px; background: #141414; border-top: 1px solid #222; display: flex; gap: 8px; }
+        .chat-footer input { flex: 1; background: #070707; border: 1px solid #333; padding: 10px; border-radius: 10px; color: white; font-size: 12px; outline: none; }
+        .chat-footer input:focus { border-color: #00ff88; }
+        .chat-footer button { background: #00ff88; color: black; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -248,6 +273,21 @@
         {% endif %}
     </div>
 
+    <button class="chat-floating-btn" onclick="toggleChat()"><i class="fas fa-comment-alt"></i></button>
+    
+    <div class="chat-window-box" id="chatWindow">
+        <div class="chat-header">
+            <h4><span class="chat-dot"></span> Live Support Chat</h4>
+            <button onclick="toggleChat()">&times;</button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            </div>
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Type message..." onkeypress="handleChatKey(event)">
+            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
     <div id="mySidenav" class="sidenav">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
         <div class="user-box">
@@ -257,7 +297,7 @@
         <a href="/"><i class="fas fa-home"></i> Home</a>
         <a href="/deposit"><i class="fas fa-wallet"></i> Deposit</a>
         <a href="#"><i class="fas fa-history"></i> My Orders</a>
-        <a href="https://wa.me/923232522768"><i class="fab fa-whatsapp"></i> Support</a>
+        <a href="javascript:void(0)" onclick="closeNav(); toggleChat();"><i class="fas fa-headset"></i> Live Support</a>
         <a href="/logout" style="color: #ff4444; margin-top: 50px;"><i class="fas fa-power-off"></i> Logout</a>
     </div>
 
@@ -269,6 +309,93 @@
             if (event.target == document.getElementById("mySidenav")) {
                 closeNav();
             }
+        }
+
+        // --- LIVE CHAT JAVASCRIPT REALTIME SYSTEM ---
+        const userId = parseInt("{{ user.id }}");
+        let chatInterval = null;
+
+        function toggleChat() {
+            const chatBox = document.getElementById("chatWindow");
+            if (chatBox.style.display === "none" || chatBox.style.display === "") {
+                chatBox.style.display = "flex";
+                fetchChatMessages();
+                // Start active tracking every 3 seconds
+                chatInterval = setInterval(fetchChatMessages, 3000);
+            } else {
+                chatBox.style.display = "none";
+                clearInterval(chatInterval);
+            }
+        }
+
+        function fetchChatMessages() {
+            fetch(`/api/chat/fetch/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                const chatBody = document.getElementById("chatBody");
+                let chatHTML = "";
+                
+                data.messages.forEach(msg => {
+                    if (msg.message.startsWith("SYSTEM_NOTIFICATION:")) {
+                        let cleanMsg = msg.message.replace("SYSTEM_NOTIFICATION:", "");
+                        chatHTML += `<div class="msg-bubble system">${cleanMsg}</div>`;
+                    } else {
+                        chatHTML += `
+                            <div class="msg-bubble ${msg.sender}">
+                                ${msg.message}
+                                <span class="msg-time">${msg.time}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                // Update input visibility if chat is closed
+                const chatInput = document.getElementById("chatInput");
+                const chatBtn = document.querySelector(".chat-footer button");
+                if (data.chat_status === "Closed") {
+                    chatInput.placeholder = "Chat closed by Admin.";
+                    chatInput.disabled = true;
+                    chatBtn.disabled = true;
+                    chatBtn.style.opacity = "0.5";
+                } else {
+                    chatInput.placeholder = "Type message...";
+                    chatInput.disabled = false;
+                    chatBtn.disabled = false;
+                    chatBtn.style.opacity = "1";
+                }
+
+                // Check scrolling position to scroll down only on new message updates
+                const oldHTML = chatBody.innerHTML;
+                if(oldHTML !== chatHTML) {
+                    chatBody.innerHTML = chatHTML;
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                }
+            })
+            .catch(err => console.log("Chat fetch error:", err));
+        }
+
+        function sendMessage() {
+            const input = document.getElementById("chatInput");
+            const text = input.value.trim();
+            if (!text) return;
+
+            fetch('/api/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    input.value = "";
+                    fetchChatMessages();
+                }
+            })
+            .catch(err => console.log("Send msg error:", err));
+        }
+
+        function handleChatKey(e) {
+            if (e.key === 'Enter') sendMessage();
         }
     </script>
 </body>
