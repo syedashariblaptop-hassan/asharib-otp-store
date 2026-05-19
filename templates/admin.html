@@ -286,21 +286,24 @@
     let activeInterval = null;
 
     function selectUserChat(userId, username) {
-        activeUserId = userId.toString(); // Force string conversion for uniform comparisons
+        activeUserId = userId.toString();
         
-        // Remove active class from all tabs
         document.querySelectorAll('.support-user-item').forEach(item => item.classList.remove('active'));
         document.getElementById(`user-tab-${userId}`).classList.add('active');
         
         document.getElementById("activeChatTitle").innerText = `Operations Hub -> Chatting with: ${username}`;
-        document.getElementById("adminChatInput").disabled = false;
-        document.getElementById("adminSendBtn").disabled = false;
         
-        // Hide red dot instantly on current select
+        // --- FIX: INPUT FORAN ENABLE KARO ---
+        const inputField = document.getElementById("adminChatInput");
+        const sendBtn = document.getElementById("adminSendBtn");
+        inputField.disabled = false;
+        sendBtn.disabled = false;
+        inputField.placeholder = "Type message or .close to finish...";
+        inputField.focus();
+        
         const currentDot = document.getElementById(`dot-user-${userId}`);
         if (currentDot) currentDot.style.display = 'none';
         
-        // Clear old tracking intervals and establish fresh one
         if (activeInterval) clearInterval(activeInterval);
         fetchAdminMessages();
         activeInterval = setInterval(fetchAdminMessages, 3000);
@@ -313,8 +316,10 @@
         .then(res => res.json())
         .then(data => {
             const body = document.getElementById("adminChatBody");
-            let htmlStr = "";
+            const inputField = document.getElementById("adminChatInput");
+            const sendBtn = document.getElementById("adminSendBtn");
             
+            let htmlStr = "";
             data.messages.forEach(msg => {
                 if (msg.message.startsWith("SYSTEM_NOTIFICATION:")) {
                     let cleanMsg = msg.message.replace("SYSTEM_NOTIFICATION:", "");
@@ -329,14 +334,17 @@
                 }
             });
             
-            // Handle if chat state is Closed
-            const inputField = document.getElementById("adminChatInput");
+            // --- SMART STATUS CHECK ---
             if (data.chat_status === "Closed") {
                 inputField.placeholder = "This conversation has been closed.";
                 inputField.disabled = true;
-                document.getElementById("adminSendBtn").disabled = true;
+                sendBtn.disabled = true;
             } else {
-                inputField.placeholder = "Type message or .close to finish...";
+                if (inputField.disabled) {
+                    inputField.disabled = false;
+                    sendBtn.disabled = false;
+                    inputField.placeholder = "Type message or .close to finish...";
+                }
             }
 
             const oldHTML = body.innerHTML;
@@ -345,7 +353,6 @@
                 body.scrollTop = body.scrollHeight;
             }
             
-            // Explicitly ensure active dot remains hidden while inside current chat
             const currentDot = document.getElementById(`dot-user-${activeUserId}`);
             if (currentDot) currentDot.style.display = 'none';
         })
@@ -374,9 +381,7 @@
         if (e.key === 'Enter') sendAdminMessage();
     }
 
-    // --- REALTIME RED NOTIFICATION DOT ENGINE BACKGROUND LOOP ---
     setInterval(() => {
-        // 1. Check global header dot state
         fetch('/api/chat/unread_check')
         .then(res => res.json())
         .then(data => {
@@ -388,11 +393,8 @@
             }
         });
 
-        // 2. Scan every active customer row to reveal local unread targets
         document.querySelectorAll('.support-user-item').forEach(item => {
             let id = item.id.replace('user-tab-', '').toString();
-            
-            // Skip scanning if this user is currently active/being viewed by admin
             if (id === activeUserId) return; 
             
             fetch(`/api/chat/fetch/${id}`)
@@ -400,22 +402,18 @@
             .then(data => {
                 const targetDot = document.getElementById(`dot-user-${id}`);
                 if (!targetDot) return;
-
-                // Show dot if chat is Active AND contains messages sent by the user
                 if (data.chat_status === "Active" && data.messages && data.messages.length > 0) {
-                    // Logic checks if the latest message sequence or status warrants attention
                     let lastMsg = data.messages[data.messages.length - 1];
                     if (lastMsg && lastMsg.sender === 'user') {
                         targetDot.style.display = 'block';
                     }
                 } else {
-                    // Turn off instantly if conversation gets closed (.close command fired)
                     targetDot.style.display = 'none';
                 }
             })
             .catch(err => console.log("Background badge sync error:", err));
         });
-    }, 3000); // Optimized sync down to 3 seconds for quick response
+    }, 3000);
 
     async function updateBalance(userId, username) {
         const { value: amount } = await Swal.fire({
