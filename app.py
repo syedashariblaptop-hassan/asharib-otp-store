@@ -381,6 +381,33 @@ def chat_unread_check():
     unread_exists = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
     return jsonify({"unread": unread_exists})
 
+# --- NEW PROFESSIONAL CHAT SESSION RESET ROUTE ---
+@app.route('/api/chat/reset', methods=['POST'])
+def chat_reset():
+    if not session.get('user_id'): return jsonify({"status": "unauthorized"}), 401
+    try:
+        user_id = session['user_id']
+        
+        # Purani saari messages jo is user ki thi unko status 'Closed' mark karo 
+        # aur naye siray se room ko fresh reset karne ke liye update lagayein
+        SupportChat.query.filter_by(user_id=user_id).update({SupportChat.status: 'Closed'})
+        
+        # Ek pristine fresh setup alert log register karein taaki admin panel par naye ticket ka trigger chala jaye
+        init_msg = SupportChat(
+            user_id=user_id,
+            message="SYSTEM_NOTIFICATION: User has started a new support session.",
+            sender='user',
+            is_read=False,
+            status='Active'
+        )
+        db.session.add(init_msg)
+        db.session.commit()
+        
+        return jsonify({"status": "success", "message": "New support session initialized."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 # --- USER AUTHENTICATION ---
 
