@@ -39,13 +39,15 @@ class User(db.Model):
     is_blocked = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Float, default=0.0)
     deposites = db.relationship('Deposit', backref='user', lazy=True)
+    orders = db.relationship('Order', backref='user', lazy=True)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     old_price = db.Column(db.String(20))
     price = db.Column(db.String(20))
-    stock = db.Column(db.String(50))
+    stock = db.Column(db.Integer, default=0) # Integer conversion for auto tracking
+    keys = db.Column(db.Text, default="") # Line-by-line keys/accounts data storage
     desc = db.Column(db.Text)
     pic = db.Column(db.String(300))
     rating = db.Column(db.String(10), default="4.9")
@@ -57,6 +59,13 @@ class Deposit(db.Model):
     amount = db.Column(db.Float, nullable=False)
     proof_url = db.Column(db.Text, nullable=False) 
     status = db.Column(db.String(20), default="Pending")
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Order(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_name = db.Column(db.String(100), nullable=False)
+    delivered_data = db.Column(db.Text, nullable=False) # Auto delivered item details
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class SupportChat(db.Model):
@@ -74,7 +83,7 @@ class SupportChat(db.Model):
 with app.app_context():
     try:
         db.create_all()
-        print("Database Synchronized with Live Chat Engine!")
+        print("Database Synchronized with Live Chat & Auto-Delivery Engine!")
     except Exception as e:
         print(f"Error syncing DB: {e}")
 
@@ -93,10 +102,69 @@ def home():
     
     try:
         user_deposits = Deposit.query.filter_by(user_id=user.id).order_by(Deposit.timestamp.desc()).all()
+        user_orders = Order.query.filter_by(user_id=user.id).order_by(Order.timestamp.desc()).all()
     except Exception:
         user_deposits = []
+        user_orders = []
         
-    return render_template('store.html', products=all_products, user=user, user_deposits=user_deposits)
+    return render_template('store.html', products=all_products, user=user, user_deposits=user_deposits, user_orders=user_orders)
+
+# --- INSTANT AUTO BUY ROUTE ---
+@app.route('/buy_product/<int:product_id>', methods=['POST'])
+def buy_product(product_id):
+    if not session.get('user_id'): return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    
+    user = User.query.get(session['user_id'])
+    product = Product.query.get(product_id)
+    
+    if not user or user.is_blocked: return jsonify({"status": "error", "message": "Account restriction active"}), 403
+    if not product: return jsonify({"status": "error", "message": "Product not found"}), 404
+    
+    try:
+        prod_price = float(product.price)
+    except ValueError:
+        return jsonify({"status": "error", "message": "Product price configuration error"}), 500
+
+    # 1. Wallet Balance Check
+    if user.balance < prod_price:
+        return jsonify({"status": "error", "message": "Low wallet balance! Please recharge first."}), 400
+        
+    # 2. Extract Stock Keys Array
+    key_lines = [line.strip() for line in (product.keys or "").split('\n') if line.strip()]
+    
+    if not key_lines or product.stock <= 0:
+        return jsonify({"status": "error", "message": "Sorry, this product is temporarily out of stock!"}), 400
+        
+    try:
+        # 3. Auto-Provisioning Operation (FIFO Strategy)
+        delivered_item = key_lines.pop(0)
+        
+        # Sync remaining keys back to db data matrix
+        product.keys = "\n".join(key_lines)
+        product.stock = len(key_lines) # Automatically updates numerical stock count
+        
+        # Deduct user balance asset values
+        user.balance -= prod_price
+        
+        # Save payload logs inside internal receipt ledger
+        new_order = Order(
+            user_id=user.id,
+            product_name=product.name,
+            delivered_data=delivered_item
+        )
+        
+        db.session.add(new_order)
+        db.session.commit()
+        
+        return jsonify({
+            "status": "success", 
+            "message": f"Successfully purchased {product.name}!", 
+            "delivered_data": delivered_item
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": f"Transaction aborted: {str(e)}"}), 500
 
 @app.route('/deposit', methods=['GET', 'POST'])
 def deposit():
@@ -146,15 +214,20 @@ def admin():
             name = request.form.get('name')
             old_price = request.form.get('old_price')
             price = request.form.get('price')
-            stock = request.form.get('stock')
+            keys_input = request.form.get('keys', '')
             pic = request.form.get('pic')
             desc = request.form.get('desc')
+            
+            # Automatically parse keys count array for instant dynamic tracking
+            parsed_keys = [k.strip() for k in keys_input.split('\n') if k.strip()]
+            calculated_stock = len(parsed_keys)
             
             new_product = Product(
                 name=name,
                 old_price=old_price,
                 price=price,
-                stock=stock,
+                stock=calculated_stock,
+                keys=keys_input,
                 pic=pic,
                 desc=desc
             )
@@ -187,7 +260,12 @@ def edit_product(product_id):
             product.name = request.form.get('name')
             product.old_price = request.form.get('old_price')
             product.price = request.form.get('price')
-            product.stock = request.form.get('stock')
+            product.keys = request.form.get('keys', '')
+            
+            # Recalculate auto-stock levels from pure text input
+            parsed_keys = [k.strip() for k in product.keys.split('\n') if k.strip()]
+            product.stock = len(parsed_keys)
+            
             product.pic = request.form.get('pic')
             product.desc = request.form.get('desc')
             db.session.commit()
@@ -308,7 +386,6 @@ def chat_send_user():
     
     if not msg_text: return jsonify({"status": "error", "message": "Empty message"}), 400
     
-    # User message bhej raha hai matlab session lazmi "Active" hona chahiye
     new_msg = SupportChat(
         user_id=session['user_id'],
         message=msg_text,
@@ -364,12 +441,9 @@ def chat_fetch(user_id):
         db.session.commit()
         
     messages_list = []
-    
-    # 🌟 CORE FIXED ENGINE LOGIC 🌟
-    # Default status set to Active. Agar aakhri valid entry database me hai toh uska exact real-time status pick hoga.
     chat_status = "Active"
     if chats:
-        chat_status = chats[-1].status  # Hamesha bilkul taaza/latest message ka status check karein
+        chat_status = chats[-1].status  
     
     for c in chats:
         messages_list.append({
@@ -386,17 +460,13 @@ def chat_unread_check():
     unread_exists = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
     return jsonify({"unread": unread_exists})
 
-# --- PROFESSIONAL CHAT SESSION RESET ROUTE ---
 @app.route('/api/chat/reset', methods=['POST'])
 def chat_reset():
     if not session.get('user_id'): return jsonify({"status": "unauthorized"}), 401
     try:
         user_id = session['user_id']
-        
-        # Purani saari messages ko Closed kar dein
         SupportChat.query.filter_by(user_id=user_id).update({SupportChat.status: 'Closed'})
         
-        # Ek pristine fresh setup alert log register karein jo Admin ke liye pure system ko status 'Active' dega
         init_msg = SupportChat(
             user_id=user_id,
             message="SYSTEM_NOTIFICATION: User has started a new support session.",
