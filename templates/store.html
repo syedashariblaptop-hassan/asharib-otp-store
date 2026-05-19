@@ -280,8 +280,7 @@
             <h4><span class="chat-dot"></span> Live Support Chat</h4>
             <button onclick="toggleChat()">&times;</button>
         </div>
-        <div class="chat-body" id="chatBody">
-            </div>
+        <div class="chat-body" id="chatBody"></div>
         <div class="chat-footer">
             <input type="text" id="chatInput" placeholder="Type message..." onkeypress="handleChatKey(event)">
             <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
@@ -314,14 +313,41 @@
         // --- LIVE CHAT JAVASCRIPT REALTIME SYSTEM ---
         const userId = parseInt("{{ user.id }}");
         let chatInterval = null;
+        let isChatClosedByAdmin = false;
 
         function toggleChat() {
             const chatBox = document.getElementById("chatWindow");
+            const chatBody = document.getElementById("chatBody");
+            const chatInput = document.getElementById("chatInput");
+            const chatBtn = document.querySelector(".chat-footer button");
+
             if (chatBox.style.display === "none" || chatBox.style.display === "") {
                 chatBox.style.display = "flex";
-                fetchChatMessages();
-                // Start active tracking every 3 seconds
-                chatInterval = setInterval(fetchChatMessages, 3000);
+                
+                // Agar pehle admin chat close kar chuka tha aur ab naye siray se user click kar raha ha
+                if (isChatClosedByAdmin) {
+                    isChatClosedByAdmin = false; // Reset flat rate
+                    chatBody.innerHTML = `<div class="msg-bubble system">Starting a new support session...</div>`;
+                    
+                    // Input fields aur buttons ko fresh reset karein
+                    chatInput.placeholder = "Type message...";
+                    chatInput.disabled = false;
+                    chatBtn.disabled = false;
+                    chatBtn.style.opacity = "1";
+
+                    // Backend standard endpoint ko call taaki ticket database me clear/reset ho jaye
+                    fetch('/api/chat/reset', { 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                    .then(() => {
+                        fetchChatMessages();
+                        chatInterval = setInterval(fetchChatMessages, 3000);
+                    });
+                } else {
+                    fetchChatMessages();
+                    chatInterval = setInterval(fetchChatMessages, 3000);
+                }
             } else {
                 chatBox.style.display = "none";
                 clearInterval(chatInterval);
@@ -349,14 +375,32 @@
                     }
                 });
 
-                // Update input visibility if chat is closed
+                // Update input visibility and handling dynamic autohide if chat is closed
                 const chatInput = document.getElementById("chatInput");
                 const chatBtn = document.querySelector(".chat-footer button");
+                
                 if (data.chat_status === "Closed") {
                     chatInput.placeholder = "Chat closed by Admin.";
                     chatInput.disabled = true;
                     chatBtn.disabled = true;
                     chatBtn.style.opacity = "0.5";
+                    
+                    // Agar pehle se loop closed read na kar raha ho tabhi close context trigger karein
+                    if (!isChatClosedByAdmin) {
+                        isChatClosedByAdmin = true;
+                        clearInterval(chatInterval); // Realtime background worker thread stop karein
+
+                        // Drop dynamic professional warning overlay alert inside container
+                        chatBody.innerHTML = chatHTML + `<div class="msg-bubble system" style="background:rgba(255,68,68,0.2); border-color:#ff4444;">Chat has been closed by admin. Window will close shortly...</div>`;
+                        chatBody.scrollTop = chatBody.scrollHeight;
+
+                        // Exactly 2.5 seconds notice timeout delay triggers layout removal
+                        setTimeout(() => {
+                            document.getElementById("chatWindow").style.display = "none";
+                            chatBody.innerHTML = ""; // Clear raw markup elements
+                        }, 2500);
+                    }
+                    return; // Stop processing further execution rules
                 } else {
                     chatInput.placeholder = "Type message...";
                     chatInput.disabled = false;
