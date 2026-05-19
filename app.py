@@ -80,7 +80,11 @@ def home():
     search_query = request.args.get('search', '').strip()
     all_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all() if search_query else Product.query.all()
     
-    user_deposits = Deposit.query.filter_by(user_id=user.id).order_by(Deposit.timestamp.desc()).all()
+    try:
+        user_deposits = Deposit.query.filter_by(user_id=user.id).order_by(Deposit.timestamp.desc()).all()
+    except Exception:
+        user_deposits = []
+        
     return render_template('store.html', products=all_products, user=user, user_deposits=user_deposits)
 
 @app.route('/deposit', methods=['GET', 'POST'])
@@ -150,11 +154,15 @@ def admin():
             db.session.rollback()
             print(f"Product upload error: {e}")
             
-    pending_count = Deposit.query.filter_by(status="Pending").count()
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0), edit_product=None)
+    try:
+        pending_count = Deposit.query.filter_by(status="Pending").count()
+        pending_exists = (pending_count > 0)
+    except Exception:
+        pending_exists = False
+        
+    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=pending_exists, edit_product=None)
 
 # --- PRODUCT EDIT ROUTE ---
-@app.route('/admin/edit_product/<int:product_id>/', methods=['GET', 'POST'])
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
 def edit_product(product_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
@@ -176,12 +184,16 @@ def edit_product(product_id):
             db.session.rollback()
             print(f"Product edit error: {e}")
             
-    pending_count = Deposit.query.filter_by(status="Pending").count()
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0), edit_product=product)
+    try:
+        pending_count = Deposit.query.filter_by(status="Pending").count()
+        pending_exists = (pending_count > 0)
+    except Exception:
+        pending_exists = False
+        
+    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=pending_exists, edit_product=product)
 
 # --- PRODUCT DELETE ROUTE ---
-@app.route('/admin/delete_product/<int:product_id>/')
-@app.route('/admin/delete_product/<int:product_id>')
+@app.route('/admin/delete_product/<int:product_id>', methods=['GET', 'POST'])
 def delete_product(product_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     product = Product.query.get(product_id)
@@ -194,28 +206,33 @@ def delete_product(product_id):
             print(f"Product delete error: {e}")
     return redirect('/admin')
 
-@app.route('/admin/toggle_block/<int:user_id>/')
-@app.route('/admin/toggle_block/<int:user_id>')
+@app.route('/admin/toggle_block/<int:user_id>', methods=['GET', 'POST'])
 def toggle_block(user_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
-        user.is_blocked = not user.is_blocked
-        db.session.commit()
+        try:
+            user.is_blocked = not user.is_blocked
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Toggle block error: {e}")
     return redirect('/admin')
 
-@app.route('/admin/delete_user/<int:user_id>/')
-@app.route('/admin/delete_user/<int:user_id>')
+@app.route('/admin/delete_user/<int:user_id>', methods=['GET', 'POST'])
 def delete_user(user_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
-        db.session.delete(user)
-        db.session.commit()
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Delete user error: {e}")
     return redirect('/admin')
 
-@app.route('/admin/update_balance/<int:user_id>/<string:amount>/')
-@app.route('/admin/update_balance/<int:user_id>/<string:amount>')
+@app.route('/admin/update_balance/<int:user_id>/<string:amount>', methods=['GET', 'POST'])
 def update_balance(user_id, amount):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
@@ -225,12 +242,16 @@ def update_balance(user_id, amount):
             db.session.commit()
         except Exception as e:
             db.session.rollback()
+            print(f"Update balance error: {e}")
     return redirect('/admin')
 
 @app.route('/admin/deposits')
 def admin_deposits():
     if not session.get('admin'): return redirect(url_for('admin_login'))
-    all_requests = Deposit.query.order_by(Deposit.timestamp.desc()).all()
+    try:
+        all_requests = Deposit.query.order_by(Deposit.timestamp.desc()).all()
+    except Exception:
+        all_requests = []
     return render_template('admin_deposits.html', requests=all_requests)
 
 @app.route('/admin/approve_deposit/<int:id>')
