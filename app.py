@@ -46,8 +46,8 @@ class Product(db.Model):
     name = db.Column(db.String(100))
     old_price = db.Column(db.String(20))
     price = db.Column(db.String(20))
-    stock = db.Column(db.Integer, default=0) # Integer conversion for auto tracking
-    keys = db.Column(db.Text, default="") # Line-by-line keys/accounts data storage
+    stock = db.Column(db.Integer, default=0) 
+    keys = db.Column(db.Text, default="") 
     desc = db.Column(db.Text)
     pic = db.Column(db.String(300))
     rating = db.Column(db.String(10), default="4.9")
@@ -65,16 +65,16 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     product_name = db.Column(db.String(100), nullable=False)
-    delivered_data = db.Column(db.Text, nullable=False) # Auto delivered item details
+    delivered_data = db.Column(db.Text, nullable=False) 
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class SupportChat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    sender = db.Column(db.String(10), nullable=False) # 'user' ya 'admin'
-    is_read = db.Column(db.Boolean, default=False)     # Admin red dot trace karne ke liye
-    status = db.Column(db.String(15), default="Active") # 'Active' ya 'Closed'
+    sender = db.Column(db.String(10), nullable=False) 
+    is_read = db.Column(db.Boolean, default=False)     
+    status = db.Column(db.String(15), default="Active") 
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
     user_rel = db.relationship('User', backref='chats', lazy=True)
@@ -87,6 +87,36 @@ with app.app_context():
     except Exception as e:
         print(f"Error syncing DB: {e}")
 
+# --- Helper function for robust formatting ---
+def format_products_safe(products_list):
+    """Saves Jinja templates from crashing by converting prices beforehand"""
+    processed = []
+    for p in products_list:
+        # Fallback price logic
+        try:
+            clean_price = float(p.price) if p.price else 0.0
+        except ValueError:
+            clean_price = 0.0
+            
+        try:
+            clean_old_price = float(p.old_price) if p.old_price else (clean_price * 1.4)
+        except ValueError:
+            clean_old_price = clean_price * 1.4
+            
+        processed.append({
+            'id': p.id,
+            'name': p.name,
+            'price': f"{clean_price:.2f}",
+            'old_price': f"{clean_old_price:.2f}",
+            'stock': p.stock,
+            'desc': p.desc,
+            'pic': p.pic,
+            'rating': p.rating,
+            'reviews': p.reviews,
+            'keys': p.keys
+        })
+    return processed
+
 # --- Routes ---
 
 @app.route('/')
@@ -98,7 +128,16 @@ def home():
         return redirect(url_for('user_auth'))
     
     search_query = request.args.get('search', '').strip()
-    all_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all() if search_query else Product.query.all()
+    if search_query:
+        db_products = Product.query.filter(Product.name.ilike(f'%{search_query}%')).all()
+    else:
+        db_products = Product.query.all()
+        
+    # Formatting safe for template injects
+    safe_products = format_products_safe(db_products)
+    
+    # Safe Balance Formatting
+    user_balance_formatted = f"{float(user.balance or 0.0):.2f}"
     
     try:
         user_deposits = Deposit.query.filter_by(user_id=user.id).order_by(Deposit.timestamp.desc()).all()
@@ -107,7 +146,7 @@ def home():
         user_deposits = []
         user_orders = []
         
-    return render_template('store.html', products=all_products, user=user, user_deposits=user_deposits, user_orders=user_orders)
+    return render_template('store.html', products=safe_products, user=user, user_balance=user_balance_formatted, user_deposits=user_deposits, user_orders=user_orders)
 
 # --- INSTANT AUTO BUY ROUTE ---
 @app.route('/buy_product/<int:product_id>', methods=['POST'])
@@ -126,7 +165,7 @@ def buy_product(product_id):
         return jsonify({"status": "error", "message": "Product price configuration error"}), 500
 
     # 1. Wallet Balance Check
-    if user.balance < prod_price:
+    if float(user.balance or 0.0) < prod_price:
         return jsonify({"status": "error", "message": "Low wallet balance! Please recharge first."}), 400
         
     # 2. Extract Stock Keys Array
@@ -141,10 +180,10 @@ def buy_product(product_id):
         
         # Sync remaining keys back to db data matrix
         product.keys = "\n".join(key_lines)
-        product.stock = len(key_lines) # Automatically updates numerical stock count
+        product.stock = len(key_lines) 
         
         # Deduct user balance asset values
-        user.balance -= prod_price
+        user.balance = float(user.balance or 0.0) - prod_price
         
         # Save payload logs inside internal receipt ledger
         new_order = Order(
@@ -201,7 +240,8 @@ def deposit():
             db.session.rollback()
             return jsonify({"status": "error", "message": str(e)}), 500
         
-    return render_template('deposit.html', user=user)
+    user_balance_formatted = f"{float(user.balance or 0.0):.2f}"
+    return render_template('deposit.html', user=user, user_balance=user_balance_formatted)
 
 # --- ADMIN ROUTES ---
 
@@ -218,7 +258,6 @@ def admin():
             pic = request.form.get('pic')
             desc = request.form.get('desc')
             
-            # Automatically parse keys count array for instant dynamic tracking
             parsed_keys = [k.strip() for k in keys_input.split('\n') if k.strip()]
             calculated_stock = len(parsed_keys)
             
@@ -245,7 +284,11 @@ def admin():
         pending_exists = False
         
     unread_chats = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=pending_exists, edit_product=None, unread_chats=unread_chats)
+    
+    # Safe formatting for admin products
+    safe_products = format_products_safe(Product.query.all())
+    
+    return render_template('admin.html', products=safe_products, users=User.query.all(), pending_exists=pending_exists, edit_product=None, unread_chats=unread_chats)
 
 # --- PRODUCT EDIT ROUTE ---
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
@@ -262,7 +305,6 @@ def edit_product(product_id):
             product.price = request.form.get('price')
             product.keys = request.form.get('keys', '')
             
-            # Recalculate auto-stock levels from pure text input
             parsed_keys = [k.strip() for k in product.keys.split('\n') if k.strip()]
             product.stock = len(parsed_keys)
             
@@ -281,7 +323,9 @@ def edit_product(product_id):
         pending_exists = False
         
     unread_chats = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=pending_exists, edit_product=product, unread_chats=unread_chats)
+    safe_products = format_products_safe(Product.query.all())
+    
+    return render_template('admin.html', products=safe_products, users=User.query.all(), pending_exists=pending_exists, edit_product=product, unread_chats=unread_chats)
 
 # --- PRODUCT DELETE ROUTE ---
 @app.route('/admin/delete_product/<int:product_id>', methods=['GET', 'POST'])
@@ -352,7 +396,7 @@ def approve_deposit(id):
         dep = Deposit.query.get(id)
         if dep and dep.status == "Pending":
             user = User.query.get(dep.user_id)
-            user.balance = float(user.balance or 0) + float(dep.amount)
+            user.balance = float(user.balance or 0.0) + float(dep.amount)
             dep.status = "Approved"
             db.session.commit()
             return jsonify({"status": "success"})
