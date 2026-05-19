@@ -214,7 +214,7 @@
                     <input type="number" name="old_price" value="{{ edit_product.old_price }}" placeholder="Old Price Display (Rs.)" required>
                     <input type="number" name="price" value="{{ edit_product.price }}" placeholder="Selling Price (Rs.)" required>
                 </div>
-                <input type="number" name="stock" value="{{ edit_product.stock }}" placeholder="Stock Tracker Value" required>
+                <textarea name="keys" rows="5" placeholder="Paste your dynamic stock items/keys here (One Item Per Line)&#10;Key1&#10;Key2&#10;Key3">{{ edit_product.keys }}</textarea>
                 <input type="text" name="pic" value="{{ edit_product.pic }}" placeholder="Product Image CDN URL" required>
                 <textarea name="desc" rows="3" placeholder="Write premium product profile summary details..." required>{{ edit_product.desc }}</textarea>
                 <button type="submit" class="btn-upload">UPDATE SERVICE CHANGES</button>
@@ -228,7 +228,7 @@
                     <input type="number" name="old_price" placeholder="Old Price Cutoff (Rs.)" required>
                     <input type="number" name="price" placeholder="Selling Price (Rs.)" required>
                 </div>
-                <input type="number" name="stock" placeholder="Initial Custom Stock Count" required>
+                <textarea name="keys" rows="5" placeholder="Paste your dynamic stock items/keys here (One Item Per Line)&#10;Account1:Password123&#10;Account2:Password456&#10;Account3:Password789"></textarea>
                 <input type="text" name="pic" placeholder="Service Icon URL / PNG Image Link" required>
                 <textarea name="desc" rows="3" placeholder="Write premium product profile summary details..." required></textarea>
                 <button type="submit" class="btn-upload">DEPLOY LIVE TO STORE</button>
@@ -285,7 +285,7 @@
         <div>
             <strong style="color: #fff; font-weight: 600; font-size: 14px;">{{ p.name }}</strong>
             <div style="font-size: 12px; color: #777; margin-top: 3px;">
-                Price: <span style="color: #00ff88; font-weight: bold;">Rs. {{ p.price }}</span> | Stock: <span style="color: #aaa;">{{ p.stock }}</span>
+                Price: <span style="color: #00ff88; font-weight: bold;">Rs. {{ p.price }}</span> | Stock Remaining: <span style="color: #61e8a2; font-weight: bold;">{{ p.stock }} items</span>
             </div>
         </div>
         <div style="display: flex; gap: 18px; align-items: center;">
