@@ -126,7 +126,6 @@ def deposit():
 def admin():
     if not session.get('admin'): return redirect(url_for('admin_login'))
     
-    # PRODUCT UPLOAD FUNCTIONALITY FIX
     if request.method == 'POST':
         try:
             name = request.form.get('name')
@@ -146,15 +145,53 @@ def admin():
             )
             db.session.add(new_product)
             db.session.commit()
-            flash("Product uploaded successfully!")
             return redirect(url_for('admin'))
         except Exception as e:
             db.session.rollback()
             print(f"Product upload error: {e}")
-            flash("Error uploading product.")
             
     pending_count = Deposit.query.filter_by(status="Pending").count()
     return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0))
+
+# --- PRODUCT EDIT ROUTE ---
+@app.route('/admin/edit_product/<int:product_id>/', methods=['GET', 'POST'])
+@app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
+def edit_product(product_id):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    product = Product.query.get(product_id)
+    if not product:
+        return redirect('/admin')
+        
+    if request.method == 'POST':
+        try:
+            product.name = request.form.get('name')
+            product.old_price = request.form.get('old_price')
+            product.price = request.form.get('price')
+            product.stock = request.form.get('stock')
+            product.pic = request.form.get('pic')
+            product.desc = request.form.get('desc')
+            db.session.commit()
+            return redirect('/admin')
+        except Exception as e:
+            db.session.rollback()
+            print(f"Product edit error: {e}")
+            
+    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), edit_product=product)
+
+# --- PRODUCT DELETE ROUTE ---
+@app.route('/admin/delete_product/<int:product_id>/')
+@app.route('/admin/delete_product/<int:product_id>')
+def delete_product(product_id):
+    if not session.get('admin'): return redirect(url_for('admin_login'))
+    product = Product.query.get(product_id)
+    if product:
+        try:
+            db.session.delete(product)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Product delete error: {e}")
+    return redirect('/admin')
 
 @app.route('/admin/toggle_block/<int:user_id>/')
 @app.route('/admin/toggle_block/<int:user_id>')
