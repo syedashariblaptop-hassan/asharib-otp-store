@@ -7,188 +7,313 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: #000000; color: white; font-family: 'Poppins', sans-serif; margin: 0; padding: 0; overflow-x: hidden; width: 100%; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        
+        body { 
+            background: #08080c; 
+            color: #f3f4f6; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow-x: hidden; 
+            width: 100%; 
+            padding-top: 38px;
+        }
 
         /* Announcement Bar */
-        .announcement-bar { background: linear-gradient(90deg, #00ff88, #00bd65); color: black; overflow: hidden; white-space: nowrap; padding: 8px 0; font-size: 11px; font-weight: bold; position: fixed; top: 0; width: 100%; z-index: 2000; }
-        .marquee { display: inline-block; animation: marquee 20s linear infinite; padding-left: 100%; }
+        .announcement-bar { 
+            background: linear-gradient(90deg, #00ff88, #00bd65); 
+            color: #040806; 
+            overflow: hidden; 
+            white-space: nowrap; 
+            padding: 10px 0; 
+            font-size: 12px; 
+            font-weight: 700; 
+            position: fixed; 
+            top: 0; 
+            width: 100%; 
+            z-index: 2000; 
+            box-shadow: 0 2px 15px rgba(0, 255, 136, 0.2);
+        }
+        .marquee { display: inline-block; animation: marquee 25s linear infinite; padding-left: 100%; }
         @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
         /* Header / Logo Section */
-        .main-header { padding: 50px 15px 10px; display: flex; align-items: center; gap: 15px; }
-        .menu-icon { font-size: 20px; color: #00ff88; cursor: pointer; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 12px; border: 1px solid #00ff8833; }
-        .logo-text { color: #00ff88; font-weight: 800; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .main-header { 
+            padding: 25px 20px 15px; 
+            display: flex; 
+            align-items: center; 
+            gap: 20px; 
+        }
+        .menu-icon { 
+            font-size: 18px; 
+            color: #00ff88; 
+            cursor: pointer; 
+            background: rgba(0, 255, 136, 0.03); 
+            padding: 12px 14px; 
+            border-radius: 14px; 
+            border: 1px solid rgba(0, 255, 136, 0.15); 
+            transition: all 0.2s ease;
+        }
+        .menu-icon:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+        .logo-text { 
+            color: #ffffff; 
+            font-weight: 800; 
+            font-size: 22px; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+        }
+        .logo-text span { color: #00ff88; }
 
         /* Wallet Section */
         .wallet-card {
-            background: linear-gradient(145deg, #111, #080808);
-            margin: 10px 15px;
-            padding: 20px;
-            border-radius: 20px;
-            border: 1px solid #222;
+            background: linear-gradient(135deg, #12121a 0%, #0d0d12 100%);
+            margin: 10px 20px 15px;
+            padding: 22px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 10px 30px rgba(0,255,136,0.05);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+            position: relative;
+            overflow: hidden;
         }
-        .wallet-info h2 { font-size: 12px; color: #888; margin: 0; text-transform: uppercase; }
-        .wallet-info .balance { font-size: 26px; color: #00ff88; font-weight: 800; margin: 5px 0; }
-        .add-funds { background: #00ff88; color: black; text-decoration: none; padding: 10px 15px; border-radius: 12px; font-weight: 700; font-size: 11px; }
+        .wallet-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.3), transparent);
+        }
+        .wallet-info h2 { font-size: 11px; color: #6b7280; margin: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .wallet-info .balance { font-size: 28px; color: #00ff88; font-weight: 800; margin-top: 4px; letter-spacing: -0.5px; }
+        .add-funds { 
+            background: #00ff88; 
+            color: #040806; 
+            text-decoration: none; 
+            padding: 12px 18px; 
+            border-radius: 14px; 
+            font-weight: 700; 
+            font-size: 12px; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2);
+            transition: all 0.2s ease;
+        }
+        .add-funds:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.3);
+        }
 
         /* Pending Items */
-        .pending-status-container { margin: 10px 15px; }
-        .pending-item { background: rgba(255, 170, 0, 0.05); border: 1px solid rgba(255, 170, 0, 0.2); color: #ffaa00; padding: 12px; border-radius: 15px; font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .status-dot { height: 8px; width: 8px; background-color: #ffaa00; border-radius: 50%; display: inline-block; animation: blink 1s infinite; margin-right: 5px; }
+        .pending-status-container { margin: 5px 20px 15px; }
+        .pending-item { 
+            background: rgba(255, 170, 0, 0.03); 
+            border: 1px solid rgba(255, 170, 0, 0.15); 
+            color: #ffaa00; 
+            padding: 14px 18px; 
+            border-radius: 16px; 
+            font-size: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 10px; 
+        }
+        .status-dot { height: 8px; width: 8px; background-color: #ffaa00; border-radius: 50%; display: inline-block; animation: blink 1.2s infinite; margin-right: 6px; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         /* Category Scroll */
-        .category-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 10px 15px; white-space: nowrap; scrollbar-width: none; }
+        .category-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 10px 20px; white-space: nowrap; scrollbar-width: none; }
         .category-scroll::-webkit-scrollbar { display: none; }
-        .cat-item { background: #111; padding: 10px 22px; border-radius: 50px; border: 1px solid #222; font-size: 12px; color: #888; transition: 0.3s; }
-        .cat-item.active { background: #00ff88; color: black; font-weight: bold; border-color: #00ff88; }
+        .cat-item { 
+            background: #12121a; 
+            padding: 10px 24px; 
+            border-radius: 50px; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            font-size: 13px; 
+            color: #9ca3af; 
+            cursor: pointer;
+            transition: all 0.2s ease; 
+        }
+        .cat-item:hover {
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .cat-item.active { background: #00ff88; color: #040806; font-weight: 700; border-color: #00ff88; box-shadow: 0 4px 12px rgba(0, 255, 136, 0.15); }
 
         /* Premium Professional Grid & Cards */
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 15px 20px; }
         .card { 
-            background: #111; 
-            padding: 12px; 
-            border-radius: 20px; 
-            border: 1px solid #222; 
+            background: linear-gradient(180deg, #12121a 0%, #0e0e14 100%); 
+            padding: 14px; 
+            border-radius: 24px; 
+            border: 1px solid rgba(255, 255, 255, 0.04); 
             position: relative; 
-            transition: all 0.3s ease; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
         .card:hover {
-            border-color: #00ff88;
-            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.1);
+            border-color: rgba(0, 255, 136, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 136, 0.03);
         }
         
         /* Image and Custom Badge Container */
         .img-container {
             position: relative;
             width: 100%;
-            height: 110px;
-            background: #070707;
-            border-radius: 15px;
+            height: 120px;
+            background: #09090e;
+            border-radius: 18px;
             overflow: hidden;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.02);
         }
         .card img { 
-            max-width: 75%; 
-            max-height: 75%; 
+            max-width: 70%; 
+            max-height: 70%; 
             object-fit: contain; 
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
         }
         .instant-badge {
             position: absolute;
-            top: 6px;
-            left: 6px;
-            background: rgba(0, 255, 136, 0.12);
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 255, 136, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             color: #00ff88;
-            padding: 2px 7px;
+            padding: 4px 10px;
             border-radius: 50px;
             font-size: 9px;
-            font-weight: bold;
-            border: 1px solid rgba(0, 255, 136, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .card h3 { font-size: 13px; margin: 6px 0 2px 0; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        /* Professional Golden Rating Section */
-        .rating-box {
+            font-weight: 800;
+            border: 1px solid rgba(0, 255, 136, 0.15);
             display: flex;
             align-items: center;
             gap: 4px;
-            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .card h3 { font-size: 14px; margin: 4px 0; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Golden Rating Section */
+        .rating-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
         }
         .stars-gold {
-            color: #ffcc00;
+            color: #ffb703;
             font-size: 9px;
             display: flex;
-            gap: 1px;
+            gap: 2px;
         }
         .rating-num {
-            font-size: 10px;
-            color: #777;
+            font-size: 11px;
+            color: #6b7280;
             font-weight: 500;
         }
 
         /* Price Configuration */
         .price-box {
             display: flex;
-            flex-direction: column;
-            margin-bottom: 6px;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 8px;
         }
         .current-price {
             color: #00ff88; 
             font-weight: 800; 
-            font-size: 15px;
+            font-size: 17px;
+            letter-spacing: -0.5px;
         }
         .old-price {
-            color: #555;
+            color: #4b5563;
             text-decoration: line-through;
             font-size: 11px;
-            margin-top: -2px;
+            font-weight: 500;
         }
 
-        /* Hot Live Stock Tracker Alert */
+        /* Live Stock Tracker Alert */
         .stock-tracker {
-            color: #ff4444;
-            font-size: 10px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            color: #ef4444;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
         }
 
-        .btn { background: #00ff88; color: #000; padding: 10px; display: block; text-align: center; text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 12px; transition: 0.2s; }
-        .btn:active { transform: scale(0.95); }
+        .btn { 
+            background: rgba(255,255,255,0.04); 
+            color: #ffffff; 
+            padding: 12px; 
+            display: block; 
+            text-align: center; 
+            text-decoration: none; 
+            border-radius: 14px; 
+            font-weight: 700; 
+            font-size: 13px; 
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.2s ease; 
+        }
+        .card:hover .btn {
+            background: #00ff88;
+            color: #040806;
+            border-color: #00ff88;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2);
+        }
+        .btn:active { transform: scale(0.97); }
 
         /* Sidenav */
-        .sidenav { height: 100%; width: 0; position: fixed; z-index: 3000; top: 0; left: 0; background-color: #0a0a0a; overflow-x: hidden; transition: 0.4s; padding-top: 60px; border-right: 1px solid #00ff8833; box-shadow: 10px 0 30px rgba(0,0,0,0.8); }
-        .sidenav a { padding: 15px 32px; text-decoration: none; font-size: 16px; color: #888; display: block; transition: 0.3s; font-weight: 500; border-bottom: 1px solid #151515; }
-        .sidenav a:hover { color: #00ff88; background: #111; }
-        .sidenav a i { margin-right: 15px; width: 20px; color: #00ff88; }
-        .sidenav .closebtn { position: absolute; top: 15px; right: 25px; font-size: 30px; margin-left: 50px; border: none; color: #ff4444; }
+        .sidenav { height: 100%; width: 0; position: fixed; z-index: 3000; top: 0; left: 0; background-color: #09090e; overflow-x: hidden; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-top: 70px; border-right: 1px solid rgba(255,255,255,0.05); box-shadow: 20px 0 40px rgba(0,0,0,0.8); }
+        .sidenav a { padding: 16px 28px; text-decoration: none; font-size: 15px; color: #9ca3af; display: block; transition: 0.2s ease; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .sidenav a:hover { color: #00ff88; background: rgba(255,255,255,0.02); padding-left: 32px; }
+        .sidenav a i { margin-right: 14px; width: 20px; color: #00ff88; font-size: 16px; }
+        .sidenav .closebtn { position: absolute; top: 20px; right: 25px; font-size: 28px; border: none; color: #ef4444; cursor: pointer; }
 
-        .user-box { padding: 0 32px 20px; }
-        .user-box b { color: #00ff88; font-size: 16px; }
+        .user-box { padding: 0 28px 25px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
+        .user-box span { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .user-box b { color: #ffffff; font-size: 18px; display: block; margin-top: 2px; }
 
         /* LIVE SUPPORT SYSTEM WIDGET CSS */
-        .chat-floating-btn { position: fixed; bottom: 20px; right: 20px; background: #00ff88; color: black; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4); z-index: 4000; border: none; outline: none; transition: 0.3s; }
-        .chat-floating-btn:active { transform: scale(0.9); }
+        .chat-floating-btn { position: fixed; bottom: 25px; right: 25px; background: #00ff88; color: #040806; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 6px 25px rgba(0, 255, 136, 0.3); z-index: 4000; border: none; outline: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .chat-floating-btn:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 8px 30px rgba(0, 255, 136, 0.4); }
+        .chat-floating-btn:active { transform: scale(0.95); }
         
-        .chat-window-box { position: fixed; bottom: 85px; right: 20px; width: 330px; height: 430px; background: #0d0d0d; border: 1px solid #00ff8833; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: none; flex-direction: column; overflow: hidden; z-index: 4000; transition: 0.3s; }
-        .chat-header { background: #141414; border-bottom: 1px solid #222; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
-        .chat-header h4 { margin: 0; font-size: 13px; color: #00ff88; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-        .chat-header .chat-dot { width: 8px; height: 8px; background: #00ff88; border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
-        .chat-header button { background: none; border: none; color: #ff4444; font-size: 16px; cursor: pointer; }
+        .chat-window-box { position: fixed; bottom: 100px; right: 25px; width: 340px; height: 460px; background: #0d0d14; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: none; flex-direction: column; overflow: hidden; z-index: 4000; transition: all 0.3s ease; }
+        .chat-header { background: #12121c; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h4 { margin: 0; font-size: 14px; color: #ffffff; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .chat-header .chat-dot { width: 8px; height: 8px; background: #00ff88; border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; box-shadow: 0 0 8px #00ff88; }
+        .chat-header button { background: none; border: none; color: #ef4444; font-size: 22px; cursor: pointer; display: flex; align-items: center; }
         
-        .chat-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; }
+        .chat-body { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; scrollbar-width: none; background: #09090e; }
         .chat-body::-webkit-scrollbar { display: none; }
         
-        .msg-bubble { max-width: 75%; padding: 8px 12px; font-size: 12px; border-radius: 12px; line-height: 1.4; word-wrap: break-word; }
-        .msg-bubble.user { background: #00ff88; color: black; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 500; }
-        .msg-bubble.admin { background: #1a1a1a; color: white; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #333; }
-        .msg-bubble.system { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.2); color: #ff4444; text-align: center; max-width: 100%; align-self: center; border-radius: 8px; font-size: 11px; font-weight: bold; }
-        .msg-time { font-size: 8px; opacity: 0.5; display: block; text-align: right; margin-top: 3px; }
-        .msg-bubble.user .msg-time { color: rgba(0,0,0,0.6); }
+        .msg-bubble { max-width: 80%; padding: 10px 14px; font-size: 13px; border-radius: 16px; line-height: 1.5; word-wrap: break-word; }
+        .msg-bubble.user { background: #00ff88; color: #040806; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 600; box-shadow: 0 3px 10px rgba(0,255,136,0.1); }
+        .msg-bubble.admin { background: #161622; color: #f3f4f6; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.04); }
+        .msg-bubble.system { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); color: #f87171; text-align: center; max-width: 100%; align-self: center; border-radius: 12px; font-size: 11px; font-weight: 700; padding: 8px 14px; width: 100%; }
+        .msg-time { font-size: 9px; opacity: 0.5; display: block; text-align: right; margin-top: 4px; font-weight: 500; }
+        .msg-bubble.user .msg-time { color: rgba(4, 8, 6, 0.6); }
 
-        .chat-footer { padding: 10px; background: #141414; border-top: 1px solid #222; display: flex; gap: 8px; }
-        .chat-footer input { flex: 1; background: #070707; border: 1px solid #333; padding: 10px; border-radius: 10px; color: white; font-size: 12px; outline: none; }
+        .chat-footer { padding: 12px 16px; background: #12121c; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px; align-items: center; }
+        .chat-footer input { flex: 1; background: #09090e; border: 1px solid rgba(255,255,255,0.08); padding: 12px 16px; border-radius: 14px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s; font-family: inherit; }
         .chat-footer input:focus { border-color: #00ff88; }
-        .chat-footer button { background: #00ff88; color: black; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+        .chat-footer button { background: #00ff88; color: #040806; border: none; width: 42px; height: 42px; border-radius: 14px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+        .chat-footer button:hover { transform: scale(1.03); }
+        .chat-footer button:active { transform: scale(0.97); }
     </style>
 </head>
 <body>
@@ -201,7 +326,7 @@
 
     <div class="main-header">
         <div class="menu-icon" onclick="openNav()"><i class="fas fa-bars"></i></div>
-        <div class="logo-text">ASHARIB TECH</div>
+        <div class="logo-text">ASHARIB <span>TECH</span></div>
     </div>
 
     <div class="wallet-card animate__animated animate__fadeIn">
@@ -290,18 +415,18 @@
     <div id="mySidenav" class="sidenav">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
         <div class="user-box">
-            <span style="font-size: 11px; color: #666;">Logged in as:</span><br>
+            <span>Logged in as:</span>
             <b>{{ user.username }}</b>
         </div>
         <a href="/"><i class="fas fa-home"></i> Home</a>
         <a href="/deposit"><i class="fas fa-wallet"></i> Deposit</a>
         <a href="#"><i class="fas fa-history"></i> My Orders</a>
         <a href="javascript:void(0)" onclick="closeNav(); toggleChat();"><i class="fas fa-headset"></i> Live Support</a>
-        <a href="/logout" style="color: #ff4444; margin-top: 50px;"><i class="fas fa-power-off"></i> Logout</a>
+        <a href="/logout" style="color: #ef4444; margin-top: 50px;"><i class="fas fa-power-off"></i> Logout</a>
     </div>
 
     <script>
-        function openNav() { document.getElementById("mySidenav").style.width = "260px"; }
+        function openNav() { document.getElementById("mySidenav").style.width = "280px"; }
         function closeNav() { document.getElementById("mySidenav").style.width = "0"; }
         
         window.onclick = function(event) {
@@ -324,18 +449,16 @@
             if (chatBox.style.display === "none" || chatBox.style.display === "") {
                 chatBox.style.display = "flex";
                 
-                // Agar pehle admin chat close kar chuka tha aur ab naye siray se user click kar raha ha
+                // Reset standard flags if initiating fresh session after admin manual closure rule
                 if (isChatClosedByAdmin) {
-                    isChatClosedByAdmin = false; // Reset flat rate
+                    isChatClosedByAdmin = false; // Reset toggle state flag
                     chatBody.innerHTML = `<div class="msg-bubble system">Starting a new support session...</div>`;
                     
-                    // Input fields aur buttons ko fresh reset karein
                     chatInput.placeholder = "Type message...";
                     chatInput.disabled = false;
                     chatBtn.disabled = false;
                     chatBtn.style.opacity = "1";
 
-                    // Backend standard endpoint ko call taaki ticket database me clear/reset ho jaye
                     fetch('/api/chat/reset', { 
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }
@@ -375,7 +498,6 @@
                     }
                 });
 
-                // Update input visibility and handling dynamic autohide if chat is closed
                 const chatInput = document.getElementById("chatInput");
                 const chatBtn = document.querySelector(".chat-footer button");
                 
@@ -385,22 +507,19 @@
                     chatBtn.disabled = true;
                     chatBtn.style.opacity = "0.5";
                     
-                    // Agar pehle se loop closed read na kar raha ho tabhi close context trigger karein
                     if (!isChatClosedByAdmin) {
                         isChatClosedByAdmin = true;
-                        clearInterval(chatInterval); // Realtime background worker thread stop karein
+                        clearInterval(chatInterval); 
 
-                        // Drop dynamic professional warning overlay alert inside container
-                        chatBody.innerHTML = chatHTML + `<div class="msg-bubble system" style="background:rgba(255,68,68,0.2); border-color:#ff4444;">Chat has been closed by admin. Window will close shortly...</div>`;
+                        chatBody.innerHTML = chatHTML + `<div class="msg-bubble system" style="background:rgba(239,68,68,0.12); border-color:#ef4444;">Chat has been closed by admin. Window will close shortly...</div>`;
                         chatBody.scrollTop = chatBody.scrollHeight;
 
-                        // Exactly 2.5 seconds notice timeout delay triggers layout removal
                         setTimeout(() => {
                             document.getElementById("chatWindow").style.display = "none";
-                            chatBody.innerHTML = ""; // Clear raw markup elements
+                            chatBody.innerHTML = ""; 
                         }, 2500);
                     }
-                    return; // Stop processing further execution rules
+                    return; 
                 } else {
                     chatInput.placeholder = "Type message...";
                     chatInput.disabled = false;
@@ -408,7 +527,6 @@
                     chatBtn.style.opacity = "1";
                 }
 
-                // Check scrolling position to scroll down only on new message updates
                 const oldHTML = chatBody.innerHTML;
                 if(oldHTML !== chatHTML) {
                     chatBody.innerHTML = chatHTML;
