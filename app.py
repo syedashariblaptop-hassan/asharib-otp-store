@@ -151,7 +151,7 @@ def admin():
             print(f"Product upload error: {e}")
             
     pending_count = Deposit.query.filter_by(status="Pending").count()
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0))
+    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0), edit_product=None)
 
 # --- PRODUCT EDIT ROUTE ---
 @app.route('/admin/edit_product/<int:product_id>/', methods=['GET', 'POST'])
@@ -176,7 +176,8 @@ def edit_product(product_id):
             db.session.rollback()
             print(f"Product edit error: {e}")
             
-    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), edit_product=product)
+    pending_count = Deposit.query.filter_by(status="Pending").count()
+    return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0), edit_product=product)
 
 # --- PRODUCT DELETE ROUTE ---
 @app.route('/admin/delete_product/<int:product_id>/')
