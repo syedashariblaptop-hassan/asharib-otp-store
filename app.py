@@ -3,10 +3,11 @@ import base64
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.pool import QueuePool
-from datetime import datetime
+from datetime import datetime, timezone
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "asharib_tech_official_key"
+app.secret_key = os.environ.get('SECRET_KEY', 'asharib_tech_official_key')
 
 # --- DATABASE CONFIGURATION ---
 db_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
@@ -35,9 +36,9 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
+    password = db.Column(db.String(255), nullable=False)  # Increased length for hash
     is_blocked = db.Column(db.Boolean, default=False)
-    balance = db.Column(db.Float, default=0.0)
+    balance = db.Column(db.Numeric(10, 2), default=0.0)  # Safe numeric data type for currency
     deposites = db.relationship('Deposit', backref='user', lazy=True)
     orders = db.relationship('Order', backref='user', lazy=True)
 
@@ -56,17 +57,17 @@ class Product(db.Model):
 class Deposit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
     proof_url = db.Column(db.Text, nullable=False) 
     status = db.Column(db.String(20), default="Pending")
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     product_name = db.Column(db.String(100), nullable=False)
     delivered_data = db.Column(db.Text, nullable=False) 
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class SupportChat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -75,24 +76,21 @@ class SupportChat(db.Model):
     sender = db.Column(db.String(10), nullable=False) 
     is_read = db.Column(db.Boolean, default=False)     
     status = db.Column(db.String(15), default="Active") 
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     user_rel = db.relationship('User', backref='chats', lazy=True)
 
-# --- Database Synchronization ---
 with app.app_context():
     try:
         db.create_all()
-        print("Database Synchronized with Live Chat & Auto-Delivery Engine!")
+        print("Database Synchronized Safely!")
     except Exception as e:
         print(f"Error syncing DB: {e}")
 
 # --- Helper function for robust formatting ---
 def format_products_safe(products_list):
-    """Saves Jinja templates from crashing by converting prices beforehand"""
     processed = []
     for p in products_list:
-        # Fallback price logic
         try:
             clean_price = float(p.price) if p.price else 0.0
         except ValueError:
@@ -133,10 +131,7 @@ def home():
     else:
         db_products = Product.query.all()
         
-    # Formatting safe for template injects
     safe_products = format_products_safe(db_products)
-    
-    # Safe Balance Formatting
     user_balance_formatted = f"{float(user.balance or 0.0):.2f}"
     
     try:
@@ -148,44 +143,38 @@ def home():
         
     return render_template('store.html', products=safe_products, user=user, user_balance=user_balance_formatted, user_deposits=user_deposits, user_orders=user_orders)
 
-# --- INSTANT AUTO BUY ROUTE ---
+# --- SECURE AUTO BUY ROUTE WITH DATABASE LOCKING ---
 @app.route('/buy_product/<int:product_id>', methods=['POST'])
 def buy_product(product_id):
     if not session.get('user_id'): return jsonify({"status": "error", "message": "Unauthorized"}), 401
     
-    user = User.query.get(session['user_id'])
-    product = Product.query.get(product_id)
-    
-    if not user or user.is_blocked: return jsonify({"status": "error", "message": "Account restriction active"}), 403
-    if not product: return jsonify({"status": "error", "message": "Product not found"}), 404
-    
     try:
-        prod_price = float(product.price)
-    except ValueError:
-        return jsonify({"status": "error", "message": "Product price configuration error"}), 500
+        # Using with_for_update() locks rows in PostgreSQL to prevent race conditions
+        user = User.query.with_for_update().get(session['user_id'])
+        product = Product.query.with_for_update().get(product_id)
+        
+        if not user or user.is_blocked: return jsonify({"status": "error", "message": "Account restriction active"}), 403
+        if not product: return jsonify({"status": "error", "message": "Product not found"}), 404
+        
+        try:
+            prod_price = float(product.price)
+        except ValueError:
+            return jsonify({"status": "error", "message": "Product price configuration error"}), 500
 
-    # 1. Wallet Balance Check
-    if float(user.balance or 0.0) < prod_price:
-        return jsonify({"status": "error", "message": "Low wallet balance! Please recharge first."}), 400
+        if float(user.balance or 0.0) < prod_price:
+            return jsonify({"status": "error", "message": "Low wallet balance! Please recharge first."}), 400
+            
+        key_lines = [line.strip() for line in (product.keys or "").split('\n') if line.strip()]
         
-    # 2. Extract Stock Keys Array
-    key_lines = [line.strip() for line in (product.keys or "").split('\n') if line.strip()]
-    
-    if not key_lines or product.stock <= 0:
-        return jsonify({"status": "error", "message": "Sorry, this product is temporarily out of stock!"}), 400
-        
-    try:
-        # 3. Auto-Provisioning Operation (FIFO Strategy)
+        if not key_lines or product.stock <= 0:
+            return jsonify({"status": "error", "message": "Sorry, this product is temporarily out of stock!"}), 400
+            
         delivered_item = key_lines.pop(0)
-        
-        # Sync remaining keys back to db data matrix
         product.keys = "\n".join(key_lines)
         product.stock = len(key_lines) 
         
-        # Deduct user balance asset values
         user.balance = float(user.balance or 0.0) - prod_price
         
-        # Save payload logs inside internal receipt ledger
         new_order = Order(
             user_id=user.id,
             product_name=product.name,
@@ -262,13 +251,8 @@ def admin():
             calculated_stock = len(parsed_keys)
             
             new_product = Product(
-                name=name,
-                old_price=old_price,
-                price=price,
-                stock=calculated_stock,
-                keys=keys_input,
-                pic=pic,
-                desc=desc
+                name=name, old_price=old_price, price=price,
+                stock=calculated_stock, keys=keys_input, pic=pic, desc=desc
             )
             db.session.add(new_product)
             db.session.commit()
@@ -284,19 +268,15 @@ def admin():
         pending_exists = False
         
     unread_chats = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
-    
-    # Safe formatting for admin products
     safe_products = format_products_safe(Product.query.all())
     
     return render_template('admin.html', products=safe_products, users=User.query.all(), pending_exists=pending_exists, edit_product=None, unread_chats=unread_chats)
 
-# --- PRODUCT EDIT ROUTE ---
 @app.route('/admin/edit_product/<int:product_id>', methods=['GET', 'POST'])
 def edit_product(product_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     product = Product.query.get(product_id)
-    if not product:
-        return redirect('/admin')
+    if not product: return redirect('/admin')
         
     if request.method == 'POST':
         try:
@@ -316,18 +296,12 @@ def edit_product(product_id):
             db.session.rollback()
             print(f"Product edit error: {e}")
             
-    try:
-        pending_count = Deposit.query.filter_by(status="Pending").count()
-        pending_exists = (pending_count > 0)
-    except Exception:
-        pending_exists = False
-        
+    pending_exists = Deposit.query.filter_by(status="Pending").count() > 0
     unread_chats = SupportChat.query.filter_by(is_read=False, sender='user').count() > 0
     safe_products = format_products_safe(Product.query.all())
     
     return render_template('admin.html', products=safe_products, users=User.query.all(), pending_exists=pending_exists, edit_product=product, unread_chats=unread_chats)
 
-# --- PRODUCT DELETE ROUTE ---
 @app.route('/admin/delete_product/<int:product_id>', methods=['GET', 'POST'])
 def delete_product(product_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
@@ -383,19 +357,16 @@ def update_balance(user_id, amount):
 @app.route('/admin/deposits')
 def admin_deposits():
     if not session.get('admin'): return redirect(url_for('admin_login'))
-    try:
-        all_requests = Deposit.query.order_by(Deposit.timestamp.desc()).all()
-    except Exception:
-        all_requests = []
+    all_requests = Deposit.query.order_by(Deposit.timestamp.desc()).all()
     return render_template('admin_deposits.html', requests=all_requests)
 
 @app.route('/admin/approve_deposit/<int:id>')
 def approve_deposit(id):
     if not session.get('admin'): return jsonify({"status": "unauthorized"}), 401
     try:
-        dep = Deposit.query.get(id)
+        dep = Deposit.query.with_for_update().get(id)
         if dep and dep.status == "Pending":
-            user = User.query.get(dep.user_id)
+            user = User.query.with_for_update().get(dep.user_id)
             user.balance = float(user.balance or 0.0) + float(dep.amount)
             dep.status = "Approved"
             db.session.commit()
@@ -431,11 +402,7 @@ def chat_send_user():
     if not msg_text: return jsonify({"status": "error", "message": "Empty message"}), 400
     
     new_msg = SupportChat(
-        user_id=session['user_id'],
-        message=msg_text,
-        sender='user',
-        is_read=False,
-        status='Active'
+        user_id=session['user_id'], message=msg_text, sender='user', is_read=False, status='Active'
     )
     db.session.add(new_msg)
     db.session.commit()
@@ -452,22 +419,15 @@ def chat_send_admin(user_id):
     if msg_text.lower() == '.close':
         SupportChat.query.filter_by(user_id=user_id, status='Active').update({SupportChat.status: 'Closed'})
         close_msg = SupportChat(
-            user_id=user_id,
-            message="SYSTEM_NOTIFICATION: Chat has been closed by admin.",
-            sender='admin',
-            is_read=True,
-            status='Closed'
+            user_id=user_id, message="SYSTEM_NOTIFICATION: Chat has been closed by admin.",
+            sender='admin', is_read=True, status='Closed'
         )
         db.session.add(close_msg)
         db.session.commit()
         return jsonify({"status": "closed", "message": "Chat closed successfully."})
 
     new_msg = SupportChat(
-        user_id=user_id,
-        message=msg_text,
-        sender='admin',
-        is_read=True,
-        status='Active'
+        user_id=user_id, message=msg_text, sender='admin', is_read=True, status='Active'
     )
     db.session.add(new_msg)
     db.session.commit()
@@ -512,11 +472,8 @@ def chat_reset():
         SupportChat.query.filter_by(user_id=user_id).update({SupportChat.status: 'Closed'})
         
         init_msg = SupportChat(
-            user_id=user_id,
-            message="SYSTEM_NOTIFICATION: User has started a new support session.",
-            sender='user',
-            is_read=False,
-            status='Active'
+            user_id=user_id, message="SYSTEM_NOTIFICATION: User has started a new support session.",
+            sender='user', is_read=False, status='Active'
         )
         db.session.add(init_msg)
         db.session.commit()
@@ -527,7 +484,7 @@ def chat_reset():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# --- USER AUTHENTICATION ---
+# --- USER AUTHENTICATION (SECURED) ---
 
 @app.route('/auth', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
@@ -536,7 +493,9 @@ def user_auth():
         login_email = request.form.get('email')
         login_password = request.form.get('password')
         user = User.query.filter_by(username=login_email).first()
-        if user and user.password == login_password:
+        
+        # Verify hash match safely
+        if user and check_password_hash(user.password, login_password):
             if user.is_blocked:
                 flash("Account suspended.")
                 return redirect(url_for('user_auth'))
@@ -554,7 +513,10 @@ def register():
         if User.query.filter_by(username=reg_email).first():
             flash("User exists!")
             return redirect(url_for('register'))
-        new_user = User(username=reg_email, password=reg_password, balance=0.0)
+            
+        # Creating a secure cryptographic string hash
+        hashed_password = generate_password_hash(reg_password)
+        new_user = User(username=reg_email, password=hashed_password, balance=0.0)
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('user_auth'))
