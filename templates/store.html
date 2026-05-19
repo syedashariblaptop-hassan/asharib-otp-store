@@ -332,7 +332,7 @@
     <div class="wallet-card animate__animated animate__fadeIn">
         <div class="wallet-info">
             <h2>Your Balance</h2>
-            <div class="balance">Rs. {{ "%.2f"|format(user.balance) }}</div>
+            <div class="balance">Rs. {{ "%.2f"|format(user_balance) }}</div>
         </div>
         <a href="/deposit" class="add-funds">
             <i class="fas fa-plus-circle"></i> ADD FUNDS
@@ -358,8 +358,8 @@
     </div>
 
     <div class="grid">
-        {% if products %}
-            {% for p in products %}
+        {% if safe_products %}
+            {% for p in safe_products %}
             <div class="card animate__animated animate__zoomIn">
                 <div class="img-container">
                     <span class="instant-badge"><i class="fas fa-bolt"></i> INSTANT</span>
@@ -449,9 +449,8 @@
             if (chatBox.style.display === "none" || chatBox.style.display === "") {
                 chatBox.style.display = "flex";
                 
-                // Reset standard flags if initiating fresh session after admin manual closure rule
                 if (isChatClosedByAdmin) {
-                    isChatClosedByAdmin = false; // Reset toggle state flag
+                    isChatClosedByAdmin = false; 
                     chatBody.innerHTML = `<div class="msg-bubble system">Starting a new support session...</div>`;
                     
                     chatInput.placeholder = "Type message...";
