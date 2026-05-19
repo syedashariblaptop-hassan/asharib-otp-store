@@ -88,7 +88,6 @@ def deposit():
     if not session.get('user_id'): return redirect(url_for('user_auth'))
     user = User.query.get(session['user_id'])
     
-    # NoneType error handling secure fix
     if not user:
         session.clear()
         return redirect(url_for('user_auth'))
@@ -121,7 +120,7 @@ def deposit():
         
     return render_template('deposit.html', user=user)
 
-# --- ADMIN ACTIONS & ROUTES ---
+# --- ADMIN ROUTES ---
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
@@ -129,6 +128,7 @@ def admin():
     pending_count = Deposit.query.filter_by(status="Pending").count()
     return render_template('admin.html', products=Product.query.all(), users=User.query.all(), pending_exists=(pending_count > 0))
 
+@app.route('/admin/toggle_block/<int:user_id>/')
 @app.route('/admin/toggle_block/<int:user_id>')
 def toggle_block(user_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
@@ -138,6 +138,7 @@ def toggle_block(user_id):
         db.session.commit()
     return redirect('/admin')
 
+@app.route('/admin/delete_user/<int:user_id>/')
 @app.route('/admin/delete_user/<int:user_id>')
 def delete_user(user_id):
     if not session.get('admin'): return redirect(url_for('admin_login'))
@@ -147,13 +148,17 @@ def delete_user(user_id):
         db.session.commit()
     return redirect('/admin')
 
-@app.route('/admin/update_balance/<int:user_id>/<float:amount>')
+@app.route('/admin/update_balance/<int:user_id>/<string:amount>/')
+@app.route('/admin/update_balance/<int:user_id>/<string:amount>')
 def update_balance(user_id, amount):
     if not session.get('admin'): return redirect(url_for('admin_login'))
     user = User.query.get(user_id)
     if user:
-        user.balance = amount
-        db.session.commit()
+        try:
+            user.balance = float(amount)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
     return redirect('/admin')
 
 @app.route('/admin/deposits')
@@ -239,6 +244,5 @@ def logout():
     session.clear()
     return redirect(url_for('user_auth'))
 
-# --- SERVER RUN (Hamesha end par hona chahiye) ---
 if __name__ == "__main__":
     app.run(debug=True)
