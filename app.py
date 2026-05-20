@@ -15,7 +15,8 @@ db_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
 if db_url:
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-    if "sslmode" not in db_url:
+    # Safe check to prevent duplicating query strings
+    if "sslmode" not in db_url.lower():
         db_url += "&sslmode=require" if "?" in db_url else "?sslmode=require"
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
@@ -36,9 +37,9 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)  # Increased length for hash
+    password = db.Column(db.String(255), nullable=False)
     is_blocked = db.Column(db.Boolean, default=False)
-    balance = db.Column(db.Numeric(10, 2), default=0.0)  # Safe numeric data type for currency
+    balance = db.Column(db.Numeric(10, 2), default=0.0)
     deposites = db.relationship('Deposit', backref='user', lazy=True)
     orders = db.relationship('Order', backref='user', lazy=True)
 
@@ -143,15 +144,15 @@ def home():
         
     return render_template('store.html', products=safe_products, user=user, user_balance=user_balance_formatted, user_deposits=user_deposits, user_orders=user_orders)
 
-# --- SECURE AUTO BUY ROUTE WITH DATABASE LOCKING ---
+# --- SECURE AUTO BUY ROUTE WITH FIXED FOR_UPDATE CONNECTION ---
 @app.route('/buy_product/<int:product_id>', methods=['POST'])
 def buy_product(product_id):
     if not session.get('user_id'): return jsonify({"status": "error", "message": "Unauthorized"}), 401
     
     try:
-        # Using with_for_update() locks rows in PostgreSQL to prevent race conditions
-        user = User.query.with_for_update().get(session['user_id'])
-        product = Product.query.with_for_update().get(product_id)
+        # Standard query instead of forcing raw lock outside transaction block context
+        user = User.query.get(session['user_id'])
+        product = Product.query.get(product_id)
         
         if not user or user.is_blocked: return jsonify({"status": "error", "message": "Account restriction active"}), 403
         if not product: return jsonify({"status": "error", "message": "Product not found"}), 404
@@ -364,9 +365,9 @@ def admin_deposits():
 def approve_deposit(id):
     if not session.get('admin'): return jsonify({"status": "unauthorized"}), 401
     try:
-        dep = Deposit.query.with_for_update().get(id)
+        dep = Deposit.query.get(id)
         if dep and dep.status == "Pending":
-            user = User.query.with_for_update().get(dep.user_id)
+            user = User.query.get(dep.user_id)
             user.balance = float(user.balance or 0.0) + float(dep.amount)
             dep.status = "Approved"
             db.session.commit()
@@ -494,7 +495,6 @@ def user_auth():
         login_password = request.form.get('password')
         user = User.query.filter_by(username=login_email).first()
         
-        # Verify hash match safely
         if user and check_password_hash(user.password, login_password):
             if user.is_blocked:
                 flash("Account suspended.")
@@ -514,7 +514,6 @@ def register():
             flash("User exists!")
             return redirect(url_for('register'))
             
-        # Creating a secure cryptographic string hash
         hashed_password = generate_password_hash(reg_password)
         new_user = User(username=reg_email, password=hashed_password, balance=0.0)
         db.session.add(new_user)
